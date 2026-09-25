@@ -1,0 +1,2 @@
+# Transcripción local gratuita (opcional). En Mac con Apple Silicon se usa mlx-whisper si está instalado.
+faster-whisper>=1.1

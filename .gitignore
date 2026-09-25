@@ -1,5 +1,13 @@
-__pycache__/
+# Secretos y datos locales
 .env
+.data/
 outputs/
-*.pyc
 
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# macOS
+.DS_Store

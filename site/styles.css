@@ -1,0 +1,47 @@
+@font-face{font-family:"Bricolage";src:url("/fonts/Bricolage.ttf") format("truetype");font-weight:200 800;font-display:swap}
+@font-face{font-family:"DM Sans";src:url("/fonts/DMSans.ttf") format("truetype");font-weight:100 1000;font-display:swap}
+:root{--bg:#0b0d10;--panel:#151920;--line:#262c35;--text:#f4f2ec;--muted:#9aa2ad;--accent:#d5f878;--ink:#141b07}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 "DM Sans",system-ui,sans-serif;
+  background-image:radial-gradient(900px 500px at 85% -10%,#2a3a1433,transparent 60%),radial-gradient(700px 400px at -10% 10%,#1d2a4433,transparent 60%)}
+a{color:var(--accent)}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 20px 80px}
+nav{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:70px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;font:800 24px/1 "Bricolage",sans-serif;letter-spacing:-.04em;color:var(--text);text-decoration:none}
+.mark{width:42px;height:42px;border-radius:12px;background:var(--accent);color:var(--ink);display:grid;place-items:center;font-size:21px;transform:rotate(-6deg);box-shadow:0 8px 30px -8px #d5f87866}
+nav .links{display:flex;gap:18px;font-size:14px}nav .links a{color:var(--muted);text-decoration:none}nav .links a:hover{color:var(--text)}
+.eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--accent)}
+h1{font:800 clamp(44px,8vw,96px)/.95 "Bricolage",sans-serif;letter-spacing:-.045em;margin:14px 0 22px}
+h1 em{font-style:normal;color:var(--accent)}
+h2{font:800 32px/1.1 "Bricolage",sans-serif;letter-spacing:-.035em;margin:0 0 14px}
+h3{font:700 20px/1.2 "Bricolage",sans-serif;letter-spacing:-.02em;margin:0 0 8px}
+.lead{font-size:19px;color:var(--muted);max-width:660px;margin:0 0 30px}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--ink);font-weight:800;padding:14px 22px;border-radius:14px;text-decoration:none}
+.btn.alt{background:var(--panel);color:var(--text);border:1px solid var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:70px}
+.feat{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:22px}
+.feat .ic{font-size:26px;margin-bottom:10px}
+.feat p{color:var(--muted);margin:0;font-size:15px}
+.steps{counter-reset:s;margin-top:70px;display:grid;gap:12px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px 20px 18px 70px;position:relative}
+.step::before{counter-increment:s;content:counter(s);position:absolute;left:20px;top:18px;width:34px;height:34px;border-radius:10px;background:var(--accent);color:var(--ink);display:grid;place-items:center;font-weight:800}
+.step p{margin:4px 0 0;color:var(--muted)}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:#0e1115;border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+.doc{max-width:760px}
+.doc h2{margin-top:40px;font-size:26px}
+.doc p,.doc li{color:#d6dae0}
+.doc .updated{color:var(--muted);font-size:14px}
+footer{margin-top:80px;border-top:1px solid var(--line);padding-top:20px;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+footer a{color:var(--muted)}
+.center{min-height:100vh;display:grid;place-items:center;padding:20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:32px;box-shadow:0 30px 80px -30px #000c}
+.card.narrow{max-width:520px;text-align:center}
+.card .mark{margin:0 auto 14px}
+.card h1{font-size:30px;margin:6px 0 10px}
+.card p{color:var(--muted)}
+.card .fine{font-size:13px;margin-top:22px}
+.copyrow{display:flex;gap:8px}
+.copyrow input{flex:1;min-width:0;background:#0e1115;border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--text);font:12px ui-monospace,Menlo,monospace}
+.copyrow button{background:var(--accent);color:var(--ink);border:0;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}

@@ -1,2 +1,6 @@
-# Python standard library only. Install ffmpeg and yt-dlp separately.
-
+# Librerías de Corta Clips. iniciar.command las instala solas en .venv.
+# Además necesitas ffmpeg (brew install ffmpeg) y, para YouTube, deno (brew install deno).
+Pillow>=10.3
+numpy>=1.26
+opencv-python-headless>=4.10
+yt-dlp[default]>=2025.11.12

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Política de privacidad · Corta Clips</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="wrap doc">
+  <nav><a class="brand" href="/"><span class="mark">✂</span>Corta Clips</a><div class="links"><a href="/terminos">Términos</a><a href="/eliminacion-datos">Eliminación de datos</a></div></nav>
+  <h1>Política de privacidad</h1>
+  <p class="updated">Última actualización: 25 de septiembre de 2026</p>
+
+  <p>Corta Clips es un programa que cada persona instala y ejecuta en su propio ordenador. No existe un servidor de Corta Clips que reciba, almacene o analice tus vídeos, tus datos personales ni tus cuentas. Esta web (corta-clips) solo muestra información y actúa como página de retorno para el inicio de sesión de Instagram.</p>
+
+  <h2>Qué datos se tratan y dónde</h2>
+  <ul>
+    <li><b>Vídeos, audios, transcripciones y clips:</b> se descargan, procesan y guardan en la carpeta <code>outputs</code> de tu ordenador.</li>
+    <li><b>Credenciales y tokens de acceso</b> (OpenAI, YouTube, TikTok, Instagram, Upload‑Post): se guardan solo en tu ordenador, en los archivos <code>.env</code> y <code>.data/tokens.json</code>, con permisos de lectura restringidos a tu usuario.</li>
+    <li><b>Datos de tus cuentas sociales:</b> Corta Clips lee únicamente el nombre y la foto del perfil conectado para mostrártelo, y usa el permiso de publicación solo cuando tú pulsas «Publicar».</li>
+  </ul>
+
+  <h2>Servicios de terceros</h2>
+  <p>Según lo que configures, tu ordenador se comunica directamente con:</p>
+  <ul>
+    <li><b>OpenAI</b> (API o tu cuenta de ChatGPT mediante Codex): recibe la transcripción del vídeo para elegir los momentos y, si eliges transcribir con Whisper, el audio. Si usas la transcripción local, el audio no sale de tu ordenador.</li>
+    <li><b>Anthropic</b> (opcional, si eliges Claude): recibe la transcripción para el mismo fin.</li>
+    <li><b>YouTube (Google), TikTok e Instagram (Meta):</b> reciben el clip, su título y su descripción cuando decides publicarlo.</li>
+    <li><b>Upload‑Post</b> (opcional): recibe el clip y sus textos si eliges ese servicio.</li>
+    <li><b>La plataforma de origen del vídeo</b> (por ejemplo, YouTube) cuando descargas un enlace.</li>
+  </ul>
+  <p>Cada servicio trata los datos según su propia política de privacidad.</p>
+
+  <h2>Uso de los datos de Google, TikTok y Meta</h2>
+  <p>Los datos obtenidos a través de las API de YouTube, TikTok e Instagram se usan exclusivamente para mostrarte qué cuenta está conectada y para subir los vídeos que tú eliges. No se venden, no se comparten con terceros, no se usan con fines publicitarios y no se utilizan para entrenar modelos de IA. El uso de la información recibida de las API de Google cumple la <a href="https://developers.google.com/terms/api-services-user-data-policy">Política de datos de usuario de los servicios de API de Google</a>, incluidos los requisitos de uso limitado.</p>
+
+  <h2>Cookies y analítica</h2>
+  <p>Ni la app ni esta web usan cookies de seguimiento, publicidad ni herramientas de analítica.</p>
+
+  <h2>Tus derechos y cómo borrar tus datos</h2>
+  <p>Como todo se guarda en tu ordenador, tienes control total: consulta la página de <a href="/eliminacion-datos">eliminación de datos</a> para desconectar cuentas y borrar la información.</p>
+
+  <h2>Cambios</h2>
+  <p>Si esta política cambia, se actualizará la fecha de esta página.</p>
+
+  <h2>Contacto</h2>
+  <p>Para cualquier consulta sobre privacidad, abre una incidencia en el <a href="https://github.com/marcoslucasfernando-sketch/open-curt">repositorio del proyecto</a>.</p>
+  <footer><span>Corta Clips</span><span><a href="/">Inicio</a> · <a href="/terminos">Términos</a></span></footer>
+</div>
+</body>
+</html>

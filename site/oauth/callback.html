@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>Volviendo a Corta Clips…</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body class="center">
+<main class="card narrow">
+  <div class="mark">✂</div>
+  <h1 id="title">Volviendo a Corta Clips…</h1>
+  <p id="text">Te llevamos de vuelta a la app que tienes abierta en tu ordenador.</p>
+  <div id="manual" hidden>
+    <p>Si no vuelve sola, abre Corta Clips → <b>Ajustes → Redes → Instagram → «¿No volvió solo?»</b> y pega esta dirección:</p>
+    <div class="copyrow"><input id="url" readonly><button id="copy" type="button">Copiar</button></div>
+  </div>
+  <p class="fine">Esta página no guarda ni envía nada: solo reenvía el código de autorización a <code>127.0.0.1</code> (tu propio ordenador).</p>
+</main>
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var state = params.get("state") || "";
+  var match = /^(\d{2,5})\./.exec(state);
+  var port = match && +match[1] >= 1024 && +match[1] <= 65535 ? match[1] : "8766";
+  var here = location.href;
+  document.getElementById("url").value = here;
+  document.getElementById("copy").onclick = function () {
+    var input = document.getElementById("url");
+    input.select();
+    (navigator.clipboard ? navigator.clipboard.writeText(here) : Promise.reject()).catch(function () { document.execCommand("copy"); });
+    this.textContent = "¡Copiado!";
+  };
+  if (!params.get("code") && !params.get("error")) {
+    document.getElementById("title").textContent = "Falta el código de autorización";
+    document.getElementById("text").textContent = "Vuelve a Corta Clips y pulsa «Conectar» otra vez.";
+    return;
+  }
+  setTimeout(function () { document.getElementById("manual").hidden = false; }, 2500);
+  location.replace("http://127.0.0.1:" + port + "/oauth/callback" + location.search);
+})();
+</script>
+</body>
+</html>

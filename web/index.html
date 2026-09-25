@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Corta Clips</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23d5f878'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle'%3E%E2%9C%82%3C/text%3E%3C/svg%3E">
+<style>
+@font-face{font-family:"Bricolage";src:url("/assets/fonts/BricolageGrotesque%5Bopsz,wdth,wght%5D.ttf") format("truetype");font-weight:200 800;font-stretch:75% 100%;font-display:swap}
+@font-face{font-family:"DM Sans";src:url("/assets/fonts/DMSans%5Bopsz,wght%5D.ttf") format("truetype");font-weight:100 1000;font-display:swap}
+@font-face{font-family:"CC Poppins";src:url("/assets/fonts/Poppins-Black.ttf") format("truetype");font-weight:900;font-display:swap}
+@font-face{font-family:"CC Anton";src:url("/assets/fonts/Anton-Regular.ttf") format("truetype");font-display:swap}
+@font-face{font-family:"CC Montserrat";src:url("/assets/fonts/Montserrat%5Bwght%5D.ttf") format("truetype");font-weight:100 900;font-display:swap}
+@font-face{font-family:"CC Unbounded";src:url("/assets/fonts/Unbounded%5Bwght%5D.ttf") format("truetype");font-weight:200 900;font-display:swap}
+@font-face{font-family:"CC Bebas";src:url("/assets/fonts/BebasNeue-Regular.ttf") format("truetype");font-display:swap}
+@font-face{font-family:"CC Archivo";src:url("/assets/fonts/ArchivoBlack-Regular.ttf") format("truetype");font-display:swap}
+
+:root{
+  --bg:#0b0d10; --bg2:#101318; --panel:#151920; --panel2:#1b2029; --line:#262c35; --line2:#343b46;
+  --text:#f4f2ec; --muted:#9aa2ad; --dim:#6d7580; --accent:#d5f878; --accent-ink:#141b07;
+  --ok:#7ee0a1; --warn:#ffcf66; --bad:#ff8b7b; --blue:#8ab4ff;
+  --r:18px; --r2:12px; --shadow:0 30px 80px -30px #000c;
+  --display:"Bricolage",ui-sans-serif,system-ui,sans-serif; --ui:"DM Sans",ui-sans-serif,system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;font-family:var(--ui);color:var(--text);background:var(--bg);min-height:100vh;font-size:15px;line-height:1.45;
+  background-image:radial-gradient(900px 500px at 85% -10%,#2a3a1433,transparent 60%),radial-gradient(700px 400px at -10% 10%,#1d2a4433,transparent 60%)}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+.wrap{max-width:1240px;margin:0 auto;padding:22px 24px 90px}
+.display{font-family:var(--display);letter-spacing:-.03em}
+
+/* Barra superior */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:54px}
+.brand{display:flex;align-items:center;gap:12px;font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:-.04em}
+.mark{width:40px;height:40px;border-radius:12px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:21px;box-shadow:0 8px 30px -8px #d5f87866;transform:rotate(-6deg)}
+.chips{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line2);background:#12161bcc;border-radius:999px;padding:7px 12px;font-size:13px;color:#cfd4da;cursor:pointer;white-space:nowrap;transition:.15s}
+.chip:hover{border-color:#4a5360;background:#171c22}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dim);flex:none}
+.dot.ok{background:var(--ok);box-shadow:0 0 12px #7ee0a188}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}
+.soc{display:inline-flex;gap:4px}
+.soc i{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-style:normal;font-size:11px;font-weight:800;background:#232932;color:#6e7782}
+.soc i.on{color:#fff}.soc i.on.yt{background:#ff2d2d}.soc i.on.tt{background:#111;box-shadow:inset 0 0 0 1px #3a3f46}.soc i.on.ig{background:linear-gradient(135deg,#feda75,#d62976 50%,#4f5bd5)}
+.iconbtn{border:1px solid var(--line2);background:var(--panel);width:40px;height:40px;border-radius:12px;cursor:pointer;display:grid;place-items:center;font-size:18px}
+.iconbtn:hover{background:var(--panel2)}
+
+/* Hero */
+.eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--accent)}
+h1{font-family:var(--display);font-weight:800;font-stretch:100%;font-size:clamp(44px,7vw,90px);line-height:.95;letter-spacing:-.045em;margin:14px 0 18px;max-width:980px}
+h1 em{font-style:normal;color:var(--accent);position:relative;white-space:nowrap}
+h1 em::after{content:"";position:absolute;left:0;right:0;bottom:.02em;height:.09em;background:var(--accent);border-radius:9px;opacity:.35}
+.lead{font-size:18px;color:var(--muted);max-width:640px;margin:0 0 34px}
+h2{font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:-.035em;margin:0}
+h3{font-family:var(--display);font-weight:700;letter-spacing:-.02em;margin:0}
+
+/* Panel de creación */
+.panel{background:linear-gradient(180deg,#171b22,#13171d);border:1px solid var(--line);border-radius:26px;padding:24px;box-shadow:var(--shadow)}
+.create{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px}
+.field label,.lbl{display:block;font-size:12.5px;font-weight:700;color:#b9c0c8;margin:0 0 8px;letter-spacing:.01em}
+input[type=text],input[type=url],input[type=number],input[type=password],select,textarea{width:100%;background:#0e1115;border:1px solid var(--line2);border-radius:var(--r2);padding:12px 14px;outline:none;transition:.15s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px #d5f87822}
+textarea{resize:vertical;min-height:70px}
+.urlrow{display:flex;gap:10px}
+.urlrow input{font-size:16px;padding:15px 16px}
+.btn{border:0;border-radius:var(--r2);padding:12px 18px;font-weight:700;cursor:pointer;background:var(--panel2);border:1px solid var(--line2);transition:.15s;display:inline-flex;align-items:center;gap:8px;justify-content:center;white-space:nowrap;text-decoration:none;color:var(--text);font-size:14px}
+.btn:hover{background:#252b35}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.primary:hover{background:#e6ffa3}
+.btn.big{padding:15px 24px;font-size:16px;border-radius:14px}
+.btn.small{padding:7px 11px;font-size:12.5px;border-radius:9px}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--bad)}
+.drop{margin-top:12px;border:1.5px dashed #3a424e;border-radius:16px;padding:16px;display:flex;align-items:center;gap:14px;color:var(--muted);cursor:pointer;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:#d5f8780a;color:var(--text)}
+.drop b{color:var(--text)}
+.drop .ic{width:42px;height:42px;border-radius:12px;background:var(--panel2);display:grid;place-items:center;font-size:20px;flex:none}
+.opts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}
+.stepper{display:flex;align-items:center;background:#0e1115;border:1px solid var(--line2);border-radius:var(--r2);overflow:hidden}
+.stepper button{width:38px;height:44px;border:0;background:transparent;cursor:pointer;font-size:18px;color:var(--muted)}
+.stepper button:hover{color:var(--text);background:#1a1f26}
+.stepper input{border:0;background:transparent;text-align:center;padding:10px 0;box-shadow:none!important}
+.range{display:flex;align-items:center;gap:6px}.range span{color:var(--dim)}
+details.more{margin-top:14px}
+details.more summary{cursor:pointer;color:var(--muted);font-size:13.5px;list-style:none}
+details.more summary::before{content:"＋ "}details.more[open] summary::before{content:"－ "}
+details.more textarea{margin-top:10px}
+.note{font-size:12.5px;color:var(--dim);margin-top:12px}
+
+/* Vista previa de subtítulos */
+.phone{aspect-ratio:9/16;max-height:430px;margin:0 auto;border-radius:22px;border:1px solid var(--line2);position:relative;overflow:hidden;
+  background:linear-gradient(160deg,#3c4f63,#1a2330 55%,#121820);box-shadow:inset 0 0 0 6px #0b0d10}
+.phone::before{content:"";position:absolute;inset:16% 20% 40%;filter:blur(1px);border-radius:50% 50% 45% 45%;background:radial-gradient(circle at 50% 35%,#c89c7e 0 32%,#6b4b3c 33% 45%,transparent 46%),radial-gradient(ellipse at 50% 110%,#2f4a6e 0 55%,transparent 56%);opacity:.8}
+.phone .hookprev{position:absolute;left:12%;right:12%;top:52%;background:#fff;color:#111;border-radius:10px;padding:6px 8px;text-align:center;font-weight:800;font-size:12px;box-shadow:0 6px 20px #0008}
+.capwrap{position:absolute;left:6%;right:6%;top:70%;text-align:center}
+.cap{font-family:var(--capfont,"Bricolage");font-weight:900;font-size:25px;line-height:1.05;text-transform:uppercase;color:#fff;-webkit-text-stroke:6px #000;paint-order:stroke fill;text-shadow:0 5px 12px #000a;display:inline}
+.cap .on{color:var(--capcolor,#ffe14d)}
+.cap.box{-webkit-text-stroke:5px #000}
+.cap.box .on{background:var(--capcolor,#d5f878);color:#111;-webkit-text-stroke:0;padding:0 .18em;border-radius:.22em;text-shadow:none}
+.cap.clean{text-transform:none;-webkit-text-stroke:0;font-size:15px;font-weight:700;background:#000a;border-radius:8px;padding:4px 10px;text-shadow:none;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.cap.none{display:none}
+.fontrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.fontbtn{border:1px solid var(--line2);background:#0e1115;border-radius:10px;padding:6px 10px;cursor:pointer;font-size:15px;color:#dfe3e8}
+.fontbtn.on{border-color:var(--accent);color:var(--accent);background:#d5f87810}
+.colors{display:flex;gap:8px;margin-top:10px;align-items:center}
+.sw{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 2px #0006}
+.sw.on{border-color:#fff}
+.seg{display:flex;background:#0e1115;border:1px solid var(--line2);border-radius:12px;padding:3px;gap:3px;margin-top:10px}
+.seg button{flex:1;border:0;background:transparent;border-radius:9px;padding:7px 4px;cursor:pointer;color:var(--muted);font-size:12.5px;font-weight:600}
+.seg button.on{background:var(--panel2);color:var(--text);box-shadow:0 1px 0 #ffffff10 inset}
+
+/* Trabajo en curso */
+.jobpanel{margin-top:22px}
+.jobhead{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.jobtitle{font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:-.02em;margin:4px 0 0;word-break:break-word}
+.stages{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0 14px}
+.stage{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#0f1216;color:var(--dim);font-size:13px;font-weight:600;position:relative;overflow:hidden}
+.stage b{display:block;font-size:18px;margin-bottom:2px}
+.stage.active{color:var(--text);border-color:#4b5563;background:#141920}
+.stage.active b{animation:pulse 1.4s infinite}
+.stage.done{color:var(--ok)}
+@keyframes pulse{50%{opacity:.35}}
+.bar{height:8px;background:#0e1115;border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#a8e04b,var(--accent));border-radius:99px;transition:width .5s}
+.msg{margin-top:12px;color:#cfd5dc;font-size:14px;min-height:20px}
+.errbox{border:1px solid #6b2f2a;background:#2a1513;border-radius:16px;padding:16px 18px;margin-top:14px}
+.errbox h4{margin:0 0 6px;color:#ffb3a8;font-size:16px}
+.errbox p{margin:0 0 10px;color:#f0d0cb}
+.errbox pre{white-space:pre-wrap;word-break:break-word;background:#140a09;border-radius:10px;padding:10px;font-size:12px;max-height:240px;overflow:auto;color:#d9b3ad}
+
+/* Resultados */
+.sectionhead{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin:58px 0 20px;flex-wrap:wrap}
+.meta{color:var(--muted);font-size:13.5px;margin-top:6px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;overflow:hidden;display:flex;flex-direction:column}
+.vid{position:relative;background:#000;aspect-ratio:9/13;display:grid;place-items:center}
+.vid video{width:100%;height:100%;object-fit:contain;background:#000}
+.vid .rendering{position:absolute;inset:0;background:#000b;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:14px;gap:6px;align-content:center}
+.spin{width:30px;height:30px;border:3px solid #ffffff22;border-top-color:var(--accent);border-radius:50%;animation:rot 0.9s linear infinite;margin:0 auto 8px}
+@keyframes rot{to{transform:rotate(360deg)}}
+.badge{position:absolute;top:12px;left:12px;background:var(--accent);color:var(--accent-ink);font-weight:800;font-size:12px;padding:5px 9px;border-radius:9px;letter-spacing:.02em}
+.badge.n{left:auto;right:12px;background:#000a;color:#fff;backdrop-filter:blur(6px)}
+.body{padding:16px 16px 18px;display:flex;flex-direction:column;gap:10px}
+.body input{width:100%}
+.body input.title{font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:-.02em;background:transparent;border:1px solid transparent;padding:6px 8px;margin:0 -8px;border-radius:10px}
+.body input.title:hover{border-color:var(--line2)}
+.mini{font-size:11.5px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.body textarea{min-height:64px;font-size:13.5px;padding:9px 11px}
+.body input.small{padding:8px 10px;font-size:13.5px}
+.reason{color:var(--muted);font-size:13px;margin:0}
+.times{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.timebox{background:#0e1115;border:1px solid var(--line2);border-radius:12px;padding:8px}
+.timebox .row{display:flex;gap:4px;align-items:center}
+.timebox input{padding:6px;font-size:13px;text-align:center;border-radius:8px}
+.timebox .btn{padding:5px 8px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pubs{display:flex;flex-direction:column;gap:6px}
+.pub{display:flex;align-items:center;gap:8px;font-size:12.5px;background:#0e1115;border:1px solid var(--line);border-radius:10px;padding:7px 9px}
+.pub .st{margin-left:auto;color:var(--muted);text-align:right}
+.pub.published .st{color:var(--ok)}.pub.error .st{color:var(--bad)}.pub.draft .st,.pub.private .st{color:var(--warn)}
+.pub .pbar{height:3px;background:#222;border-radius:9px;overflow:hidden;flex-basis:100%}.pub .pbar i{display:block;height:100%;background:var(--accent)}
+.warnline{font-size:12.5px;color:var(--warn)}
+
+/* Historial */
+.history{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.hitem{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px;display:flex;gap:10px;align-items:center;cursor:pointer;text-align:left;transition:.15s}
+.hitem:hover{border-color:#4a5360}
+.hitem .th{width:42px;height:60px;border-radius:9px;background:#0e1115 center/cover no-repeat;flex:none;display:grid;place-items:center;color:var(--dim)}
+.hitem .t{font-weight:700;font-size:13.5px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hitem .s{font-size:12px;color:var(--dim);margin-top:3px}
+.empty{color:var(--dim);font-size:14px}
+
+/* Cajón de ajustes */
+.scrim{position:fixed;inset:0;background:#0009;backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:.2s;z-index:40}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100vh;width:min(620px,100vw);background:#111419;border-left:1px solid var(--line);z-index:41;transform:translateX(100%);transition:.25s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+.drawer.on{transform:none}
+.dhead{display:flex;justify-content:space-between;align-items:center;padding:20px 22px 10px}
+.tabs{display:flex;gap:4px;padding:0 18px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{border:0;background:transparent;padding:12px 12px;cursor:pointer;color:var(--muted);font-weight:700;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.on{color:var(--text);border-bottom-color:var(--accent)}
+.dbody{overflow-y:auto;padding:20px 22px 60px;flex:1}
+.box{border:1px solid var(--line);border-radius:16px;padding:16px;background:#151920;margin-bottom:14px}
+.box.sel{border-color:var(--accent);box-shadow:0 0 0 3px #d5f87814}
+.boxhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+.boxhead h3{font-size:17px}
+.muted{color:var(--muted)}.small{font-size:12.5px}
+.steps{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:13px}
+.steps li{margin:4px 0}
+.copy{display:flex;gap:6px;margin-top:8px}
+.copy input{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;padding:9px 10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.check{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px;cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.acct{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.acct img{width:24px;height:24px;border-radius:50%}
+.diag{display:grid;grid-template-columns:22px 1fr;gap:6px 10px;font-size:14px}
+.diag .hint{grid-column:2;color:var(--dim);font-size:12.5px;margin-top:-4px}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:#0b0d10;border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+
+/* Modales */
+dialog{border:1px solid var(--line2);background:#14181e;color:var(--text);border-radius:22px;padding:0;width:min(520px,94vw);box-shadow:var(--shadow)}
+dialog::backdrop{background:#000a;backdrop-filter:blur(3px)}
+.mhead{padding:20px 22px 4px}.mbody{padding:10px 22px 4px}.mfoot{padding:16px 22px 20px;display:flex;justify-content:flex-end;gap:8px}
+.target{display:flex;align-items:center;gap:12px;border:1px solid var(--line2);border-radius:14px;padding:12px;margin-bottom:8px;cursor:pointer}
+.target input{width:18px;height:18px;accent-color:var(--accent)}
+.target.off{opacity:.55}
+.target .sub{font-size:12.5px;color:var(--muted)}
+
+/* Avisos */
+.toasts{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:60;align-items:center;pointer-events:none}
+.toast{background:#1d232b;border:1px solid var(--line2);padding:11px 16px;border-radius:12px;box-shadow:var(--shadow);font-size:14px;max-width:min(560px,92vw);animation:up .25s;pointer-events:auto}
+.toast.bad{border-color:#7a3a33;background:#2a1715}.toast.ok{border-color:#3f6b2a}
+.toast small{display:block;color:var(--muted);margin-top:3px}
+@keyframes up{from{transform:translateY(10px);opacity:0}}
+.footer{margin-top:70px;border-top:1px solid var(--line);padding-top:20px;color:var(--dim);font-size:13px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+@media(max-width:900px){.create{grid-template-columns:1fr}.opts{grid-template-columns:1fr 1fr}.stages{grid-template-columns:1fr 1fr}.top{margin-bottom:34px}}
+@media(max-width:560px){.wrap{padding:16px 14px 70px}.urlrow{flex-direction:column}.chips .chip.hide-s{display:none}.grid2{grid-template-columns:1fr}.panel{padding:16px;border-radius:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span class="mark">✂</span>Corta Clips</div>
+    <div class="chips">
+      <button class="chip" id="chipAi" data-tab="ia"><span class="dot"></span><span>IA…</span></button>
+      <button class="chip hide-s" id="chipTr" data-tab="tr"><span class="dot"></span><span>Transcripción…</span></button>
+      <button class="chip" id="chipSoc" data-tab="redes"><span class="soc"><i class="yt">▶</i><i class="tt">♪</i><i class="ig">◎</i></span></button>
+      <button class="iconbtn" id="openSettings" title="Ajustes" aria-label="Ajustes">⚙︎</button>
+    </div>
+  </header>
+
+  <div class="eyebrow">Estudio local · GPT‑6 Luna</div>
+  <h1>Del episodio eterno<br>a clips que <em>enganchan</em>.</h1>
+  <p class="lead">Pega un enlace o suelta un archivo. La IA encuentra los mejores momentos, los recorta en vertical siguiendo las caras, les pone subtítulos animados y los publica en tus redes.</p>
+
+  <section class="panel">
+    <div class="create">
+      <div>
+        <form id="form" autocomplete="off">
+          <label class="lbl" for="url">Enlace del vídeo o podcast</label>
+          <div class="urlrow">
+            <input id="url" type="url" placeholder="https://www.youtube.com/watch?v=…  ·  Apple Podcasts  ·  RSS  ·  Twitch  ·  Spotify*">
+            <button class="btn primary big" id="submit" type="submit">Crear clips ↗</button>
+          </div>
+          <div class="drop" id="drop" tabindex="0" role="button">
+            <div class="ic">⇪</div>
+            <div><b>O arrastra aquí un vídeo o audio</b> de tu ordenador<br><span class="small">MP4, MOV, MKV, WEBM, MP3, M4A, WAV… hasta 8 GB</span></div>
+            <input type="file" id="file" accept="video/*,audio/*,.mkv,.m4a,.opus,.flac" hidden>
+          </div>
+          <div class="opts">
+            <div class="field"><label>Número de clips</label>
+              <div class="stepper"><button type="button" data-step="-1">−</button><input id="count" type="number" min="1" max="12" value="5"><button type="button" data-step="1">+</button></div></div>
+            <div class="field"><label>Duración (segundos)</label>
+              <div class="range"><input id="min" type="number" min="5" max="180" value="20"><span>–</span><input id="max" type="number" min="5" max="180" value="60"></div></div>
+            <div class="field"><label for="layout">Encuadre</label>
+              <select id="layout"><option value="auto">Automático (sigue caras)</option><option value="faces">Siempre recortar a la cara</option><option value="blur">Vídeo entero + fondo difuminado</option><option value="crop">Recorte central</option></select></div>
+            <div class="field"><label for="language">Idioma</label>
+              <select id="language"><option value="">Detectar solo</option><option value="es">Español</option><option value="en">Inglés</option><option value="pt">Portugués</option><option value="ca">Catalán</option><option value="fr">Francés</option><option value="it">Italiano</option><option value="de">Alemán</option></select></div>
+          </div>
+          <details class="more"><summary>Instrucciones para la IA (opcional)</summary>
+            <textarea id="instructions" placeholder="Ej.: céntrate en los consejos de dinero; evita la parte del patrocinador; quiero clips polémicos."></textarea>
+          </details>
+          <div class="note">* Spotify cifra sus podcasts: si pegas un enlace de Spotify, Corta Clips busca el mismo episodio en YouTube. El vídeo se procesa en tu ordenador.</div>
+        </form>
+      </div>
+      <aside>
+        <div class="lbl">Estilo de subtítulos</div>
+        <div class="phone" id="phone"><div class="hookprev" id="hookPrev">¿Sabías que esto cambia todo?</div><div class="capwrap"><div class="cap" id="capPrev">ESTO ES <span class="on">BRUTAL</span></div></div></div>
+        <div class="seg" id="styleSeg"><button data-v="karaoke">Karaoke</button><button data-v="box">Caja</button><button data-v="clean">Limpio</button><button data-v="none">Sin</button></div>
+        <div class="fontrow" id="fontRow"></div>
+        <div class="colors" id="colorRow"></div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="panel jobpanel" id="jobPanel" hidden>
+    <div class="jobhead">
+      <div><div class="eyebrow" id="jobEyebrow">En marcha</div><div class="jobtitle" id="jobTitle">Preparando…</div></div>
+      <div class="actions"><button class="btn small" id="logBtn">Registro técnico</button><button class="btn small danger" id="cancelBtn">Cancelar</button></div>
+    </div>
+    <div class="stages" id="stages"></div>
+    <div class="bar"><i id="barFill"></i></div>
+    <div class="msg" id="jobMsg"></div>
+    <div id="jobError"></div>
+  </section>
+
+  <section id="results" hidden>
+    <div class="sectionhead">
+      <div><div class="eyebrow">Resultados</div><h2 id="resTitle">Tus clips</h2><div class="meta" id="resMeta"></div></div>
+      <div class="actions">
+        <button class="btn" id="reselectBtn">↻ Elegir otros momentos</button>
+        <button class="btn" id="publishAllBtn">Publicar todos</button>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section id="historySec">
+    <div class="sectionhead"><div><div class="eyebrow">Historial</div><h2>Trabajos recientes</h2></div></div>
+    <div class="history" id="history"><div class="empty">Aún no hay trabajos. ¡Pega tu primer enlace!</div></div>
+  </section>
+
+  <footer class="footer"><span>Corta Clips <span id="ver"></span> · se ejecuta en tu ordenador</span><span>La puntuación es editorial, no una predicción de visitas. Revisa textos y subtítulos antes de publicar.</span></footer>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Ajustes">
+  <div class="dhead"><h2>Ajustes</h2><button class="iconbtn" id="closeSettings" aria-label="Cerrar">✕</button></div>
+  <nav class="tabs" id="tabs">
+    <button class="tab on" data-tab="ia">IA</button><button class="tab" data-tab="tr">Transcripción</button>
+    <button class="tab" data-tab="estilo">Vídeo</button><button class="tab" data-tab="redes">Redes</button><button class="tab" data-tab="sistema">Sistema</button>
+  </nav>
+  <div class="dbody" id="dbody"></div>
+</aside>
+
+<dialog id="pubDlg"><form method="dialog">
+  <div class="mhead"><h2>Publicar</h2><div class="meta" id="pubWhat"></div></div>
+  <div class="mbody" id="pubTargets"></div>
+  <div class="mfoot"><button class="btn" value="cancel">Cancelar</button><button class="btn primary" id="pubGo" value="ok">Publicar ahora</button></div>
+</form></dialog>
+
+<dialog id="reDlg"><form method="dialog">
+  <div class="mhead"><h2>Elegir otros momentos</h2><div class="meta">Se reutiliza la transcripción: solo se vuelve a preguntar a la IA y a montar los clips.</div></div>
+  <div class="mbody">
+    <div class="grid2"><div class="field"><label>Número de clips</label><input id="reCount" type="number" min="1" max="12"></div>
+    <div class="field"><label>Duración (s)</label><div class="range"><input id="reMin" type="number" min="5" max="180"><span>–</span><input id="reMax" type="number" min="5" max="180"></div></div></div>
+    <div class="field" style="margin-top:12px"><label>Instrucciones para la IA</label><textarea id="reInstr" placeholder="Ej.: momentos más graciosos; clips cortos y directos."></textarea></div>
+  </div>
+  <div class="mfoot"><button class="btn" value="cancel">Cancelar</button><button class="btn primary" id="reGo" value="ok">Volver a elegir</button></div>
+</form></dialog>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+"use strict";
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+function h(tag, props = {}, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k === "text") el.textContent = v;
+    else if (k === "style") el.style.cssText = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (k === "value") el.value = v;
+    else if (v === true) el.setAttribute(k, "");
+    else el.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  return el;
+}
+async function api(path, { method = "GET", body } = {}) {
+  const opt = { method, headers: {} };
+  if (body !== undefined) { opt.body = JSON.stringify(body); opt.headers["Content-Type"] = "application/json"; }
+  const r = await fetch(path, opt);
+  let j = {};
+  try { j = await r.json(); } catch (e) {}
+  if (!r.ok) { const err = new Error(j.error || `Error ${r.status}`); err.hint = j.hint || ""; err.detail = j.detail || ""; throw err; }
+  return j;
+}
+function toast(msg, kind = "", sub = "") {
+  const t = h("div", { class: "toast " + kind }, msg, sub ? h("small", { text: sub }) : null);
+  $("#toasts").append(t);
+  setTimeout(() => t.remove(), kind === "bad" ? 9000 : 4500);
+}
+const fail = e => toast(e.message, "bad", e.hint);
+const fmt = s => { s = Math.max(0, +s || 0); const m = Math.floor(s / 60); return `${m}:${(s % 60).toFixed(1).padStart(4, "0")}`; };
+const ago = t => { const d = (Date.now() / 1000 - t); if (d < 60) return "hace un momento"; if (d < 3600) return `hace ${Math.floor(d / 60)} min`; if (d < 86400) return `hace ${Math.floor(d / 3600)} h`; return new Date(t * 1000).toLocaleDateString("es"); };
+
+const S = { status: null, settings: {}, jobId: null, job: null, timer: null, cards: new Map(), pubClip: null };
+const FONT_CSS = { bricolage: ['"Bricolage"', 800], poppins: ['"CC Poppins"', 900], anton: ['"CC Anton"', 400], montserrat: ['"CC Montserrat"', 900], unbounded: ['"CC Unbounded"', 800], bebas: ['"CC Bebas"', 400], archivo: ['"CC Archivo"', 400] };
+const COLORS = { yellow: "#ffe14d", lime: "#d5f878", cyan: "#5eeaff", pink: "#ff6ec7", orange: "#ff9632" };
+const STAGES = [["download", "⇣", "Descargar"], ["transcribe", "✎", "Transcribir"], ["select", "✦", "Elegir momentos"], ["render", "▣", "Montar clips"]];
+const TARGET_LABEL = { youtube: "YouTube Shorts", tiktok: "TikTok", instagram: "Instagram Reels", uploadpost: "Upload‑Post" };
+const PUB_STATUS = { uploading: "Subiendo…", processing: "Procesando…", published: "Publicado ✓", draft: "En borradores de TikTok", private: "Subido como privado", error: "Error" };
+
+/* ---------------------------------------------------------------- Estado del sistema */
+async function loadStatus() {
+  try {
+    S.status = await api("/api/status");
+    S.settings = S.status.settings;
+    paintChips(); paintStyle(); fillDefaults();
+    if ($("#drawer").classList.contains("on")) paintDrawer();
+    $("#ver").textContent = S.status.version;
+  } catch (e) { $("#chipAi").lastChild.textContent = "Sin conexión con la app"; }
+}
+function paintChips() {
+  const st = S.status;
+  const ai = $("#chipAi");
+  ai.firstChild.className = "dot " + (st.ai.active ? "ok" : "bad");
+  ai.lastChild.textContent = st.ai.active ? st.ai.label : "Conecta la IA";
+  const tr = $("#chipTr");
+  tr.firstChild.className = "dot " + (st.transcription.active ? "ok" : "bad");
+  tr.lastChild.textContent = st.transcription.active ? (st.transcription.active === "openai" ? "Whisper (API)" : `Transcripción local · ${st.transcription.model}`) : "Sin transcripción";
+  const soc = $("#chipSoc .soc").children;
+  ["youtube", "tiktok", "instagram"].forEach((p, i) => soc[i].classList.toggle("on", !!st.social[p].connected));
+}
+let defaultsFilled = false;
+function fillDefaults() {
+  if (defaultsFilled) return; defaultsFilled = true;
+  const s = S.settings;
+  $("#count").value = s.clip_count; $("#min").value = s.min_seconds; $("#max").value = s.max_seconds;
+  $("#layout").value = s.layout; $("#language").value = s.language || "";
+}
+async function saveSettings(values, quiet = true) {
+  try {
+    const r = await api("/api/settings", { method: "POST", body: values });
+    S.settings = r.settings; if (S.status) S.status.settings = r.settings;
+    paintStyle();
+    if (!quiet) toast("Ajustes guardados", "ok");
+  } catch (e) { fail(e); }
+}
+
+/* ---------------------------------------------------------------- Estilo de subtítulos */
+function paintStyle() {
+  const s = S.settings;
+  const [family, weight] = FONT_CSS[s.caption_font] || FONT_CSS.bricolage;
+  const cap = $("#capPrev");
+  cap.style.setProperty("--capfont", family); cap.style.fontWeight = weight;
+  cap.style.setProperty("--capcolor", COLORS[s.caption_color] || COLORS.yellow);
+  cap.className = "cap " + (s.caption_style === "karaoke" ? "" : s.caption_style);
+  cap.style.textTransform = s.caption_uppercase || s.caption_font === "bebas" ? "uppercase" : "none";
+  $("#hookPrev").style.display = s.hook_overlay ? "" : "none";
+  $("#hookPrev").style.fontFamily = family;
+  $$("#styleSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === s.caption_style));
+  const row = $("#fontRow");
+  if (!row.children.length && S.status) {
+    for (const f of S.status.fonts) {
+      const [fam, w] = FONT_CSS[f.id] || FONT_CSS.bricolage;
+      row.append(h("button", { class: "fontbtn", type: "button", "data-v": f.id, style: `font-family:${fam};font-weight:${w}`, onclick: () => saveSettings({ caption_font: f.id }) }, f.label));
+    }
+    const colors = $("#colorRow");
+    colors.append(h("span", { class: "small muted", text: "Color" }));
+    for (const [k, v] of Object.entries(COLORS)) colors.append(h("button", { class: "sw", type: "button", title: k, "data-v": k, style: `background:${v}`, onclick: () => saveSettings({ caption_color: k }) }));
+  }
+  $$("#fontRow .fontbtn").forEach(b => b.classList.toggle("on", b.dataset.v === s.caption_font));
+  $$("#colorRow .sw").forEach(b => b.classList.toggle("on", b.dataset.v === s.caption_color));
+}
+$$("#styleSeg button").forEach(b => b.onclick = () => saveSettings({ caption_style: b.dataset.v }));
+$$(".stepper button").forEach(b => b.onclick = () => { const i = $("#count"); i.value = Math.min(12, Math.max(1, (+i.value || 1) + +b.dataset.step)); });
+
+/* ---------------------------------------------------------------- Crear trabajos */
+function jobOptions() {
+  return { count: +$("#count").value, min_seconds: +$("#min").value, max_seconds: +$("#max").value,
+    instructions: $("#instructions").value, layout: $("#layout").value, language: $("#language").value };
+}
+function validOptions(o) {
+  if (!(o.count >= 1 && o.count <= 12)) { toast("Elige entre 1 y 12 clips.", "bad"); return false; }
+  if (!(o.min_seconds >= 5 && o.max_seconds <= 180 && o.min_seconds <= o.max_seconds)) { toast("Revisa la duración: mínimo 5 s, máximo 180 s.", "bad"); return false; }
+  return true;
+}
+$("#form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const url = $("#url").value.trim();
+  if (!url) { $("#url").focus(); toast("Pega un enlace o arrastra un archivo.", "bad"); return; }
+  const o = jobOptions(); if (!validOptions(o)) return;
+  $("#submit").disabled = true;
+  try {
+    const job = await api("/api/jobs", { method: "POST", body: { url, ...o } });
+    $("#url").value = "";
+    openJob(job.id, true);
+  } catch (err) { fail(err); } finally { $("#submit").disabled = false; }
+});
+const drop = $("#drop");
+drop.onclick = () => $("#file").click();
+drop.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#file").click(); } };
+$("#file").onchange = () => { if ($("#file").files[0]) uploadFile($("#file").files[0]); $("#file").value = ""; };
+["dragenter", "dragover"].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); if (ev === "drop" || e.target === document.documentElement) drop.classList.remove("over"); }));
+document.addEventListener("drop", e => { const f = e.dataTransfer?.files?.[0]; if (f) uploadFile(f); });
+function uploadFile(file) {
+  const o = jobOptions(); if (!validOptions(o)) return;
+  showJobPanel(); $("#jobTitle").textContent = file.name; $("#jobEyebrow").textContent = "Subiendo archivo";
+  $("#stages").replaceChildren(); $("#jobError").replaceChildren(); $("#cancelBtn").hidden = true;
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", "/api/upload");
+  xhr.setRequestHeader("X-Filename", encodeURIComponent(file.name));
+  xhr.setRequestHeader("X-Options", encodeURIComponent(JSON.stringify(o)));
+  xhr.upload.onprogress = e => { if (e.lengthComputable) { $("#barFill").style.width = (e.loaded / e.total * 100).toFixed(1) + "%"; $("#jobMsg").textContent = `Subiendo… ${(e.loaded / e.total * 100).toFixed(0)}%`; } };
+  xhr.onload = () => {
+    let j = {}; try { j = JSON.parse(xhr.responseText); } catch (e) {}
+    if (xhr.status >= 300) { toast(j.error || "No se pudo subir", "bad", j.hint); $("#jobPanel").hidden = true; return; }
+    openJob(j.id, true);
+  };
+  xhr.onerror = () => { toast("Se cortó la subida.", "bad"); $("#jobPanel").hidden = true; };
+  xhr.send(file);
+}
+
+/* ---------------------------------------------------------------- Seguimiento de trabajos */
+function showJobPanel() { $("#jobPanel").hidden = false; }
+function openJob(id, scroll = false) {
+  S.jobId = id; S.cards.clear(); $("#grid").replaceChildren();
+  clearTimeout(S.timer); poll(scroll);
+}
+function busy(job) {
+  if (["queued", "running"].includes(job.status)) return true;
+  return (job.clips || []).some(c => c.status === "rendering" || Object.values(c.publications || {}).some(p => ["uploading"].includes(p.status)));
+}
+async function poll(scroll) {
+  const id = S.jobId;
+  try {
+    const job = await api(`/api/jobs/${id}`);
+    if (id !== S.jobId) return;
+    const wasBusy = S.job && S.job.id === id && busy(S.job);
+    S.job = job; paintJob(job);
+    if (scroll) (job.status === "done" ? $("#results") : $("#jobPanel")).scrollIntoView({ behavior: "smooth", block: "start" });
+    if (busy(job)) S.timer = setTimeout(poll, 1200);
+    else if (wasBusy) { loadHistory(); if (job.status === "done") toast("¡Clips listos!", "ok"); }
+  } catch (e) { if (id === S.jobId) S.timer = setTimeout(poll, 4000); }
+}
+function paintJob(job) {
+  const active = ["queued", "running", "error", "cancelled"].includes(job.status);
+  $("#jobPanel").hidden = !active;
+  if (active) {
+    $("#jobEyebrow").textContent = { queued: "En cola", running: "En marcha", error: "Algo falló", cancelled: "Cancelado" }[job.status];
+    $("#jobTitle").textContent = job.source?.title || job.input?.url || job.input?.filename || "Trabajo";
+    $("#cancelBtn").hidden = !["queued", "running"].includes(job.status);
+    const order = STAGES.map(s => s[0]);
+    const idx = order.indexOf(job.stage);
+    $("#stages").replaceChildren(...STAGES.map(([k, icon, label], i) =>
+      h("div", { class: "stage " + (i < idx || job.stage === "done" ? "done" : i === idx && job.status === "running" ? "active" : "") }, h("b", { text: i < idx ? "✓" : icon }), label)));
+    $("#barFill").style.width = ((job.progress || 0) * 100).toFixed(1) + "%";
+    $("#jobMsg").textContent = job.message || "";
+    const err = $("#jobError"); err.replaceChildren();
+    if (job.status === "error" && job.error) {
+      err.append(h("div", { class: "errbox" }, h("h4", { text: job.error.message }), job.error.hint ? h("p", { text: job.error.hint }) : null,
+        job.error.detail ? h("details", {}, h("summary", { class: "small muted", text: "Detalles técnicos" }), h("pre", { text: job.error.detail })) : null,
+        h("div", { class: "row", style: "margin-top:10px" }, h("button", { class: "btn primary small", text: "↻ Reintentar", onclick: () => act("retry") }),
+          h("a", { class: "btn small", href: `/files/${job.id}/job.log`, target: "_blank", text: "Ver registro completo" }),
+          h("button", { class: "btn small ghost", text: "Abrir ajustes", onclick: () => openDrawer("ia") }))));
+    } else if (job.status === "cancelled") {
+      err.append(h("div", { class: "row", style: "margin-top:12px" }, h("button", { class: "btn small", text: "↻ Reintentar", onclick: () => act("retry") })));
+    }
+  }
+  const hasClips = (job.clips || []).length > 0 && job.status !== "running" && job.status !== "queued";
+  $("#results").hidden = !hasClips;
+  if (hasClips) paintResults(job);
+}
+async function act(action) {
+  try { await api(`/api/jobs/${S.jobId}/${action}`, { method: "POST", body: {} }); openJob(S.jobId); if (action !== "cancel") loadHistory(); }
+  catch (e) { fail(e); }
+}
+$("#cancelBtn").onclick = () => act("cancel");
+$("#logBtn").onclick = () => S.jobId && window.open(`/files/${S.jobId}/job.log`, "_blank");
+
+/* ---------------------------------------------------------------- Resultados */
+function paintResults(job) {
+  $("#resTitle").textContent = job.source?.title || "Tus clips";
+  const bits = [];
+  if (job.source?.duration) bits.push(`Original: ${fmt(job.source.duration)}`);
+  if (job.ai) bits.push(`Selección: ${job.ai}`);
+  if (job.transcription?.engine) bits.push(`Transcripción: ${job.transcription.engine === "openai" ? "Whisper API" : "local " + (job.transcription.model || "")}`);
+  $("#resMeta").textContent = bits.join(" · ");
+  const grid = $("#grid");
+  const seen = new Set();
+  for (const clip of job.clips) {
+    seen.add(clip.number);
+    let entry = S.cards.get(clip.number);
+    const sig = [clip.rendered_at, clip.status, clip.start, clip.end, clip.error, clip.dirty, clip.file].join("|");
+    if (!entry) { entry = { el: h("article", { class: "card" }), sig: "" }; S.cards.set(clip.number, entry); grid.append(entry.el); }
+    if (entry.sig !== sig && !entry.el.contains(document.activeElement)) { buildCard(entry.el, job, clip); entry.sig = sig; }
+    paintPubs(entry.el, job, clip);
+  }
+  for (const [n, entry] of S.cards) if (!seen.has(n)) { entry.el.remove(); S.cards.delete(n); }
+}
+function buildCard(el, job, clip) {
+  const v = clip.rendered_at || 0;
+  const vid = h("div", { class: "vid" });
+  if (clip.file) vid.append(h("video", { controls: true, preload: "metadata", playsinline: true, src: `/files/${job.id}/${clip.file}?v=${v}`, poster: clip.thumb ? `/files/${job.id}/${clip.thumb}?v=${v}` : null }));
+  if (clip.status === "rendering" || clip.status === "pending") vid.append(h("div", { class: "rendering" }, h("div", { class: "spin" }), clip.status === "pending" ? "En cola…" : "Renderizando…"));
+  vid.append(h("span", { class: "badge", text: `${clip.score}/100` }), h("span", { class: "badge n", text: `#${clip.number}` }));
+  const save = async fields => { try { await api(`/api/jobs/${job.id}/clips/${clip.number}/meta`, { method: "POST", body: fields }); S.cards.get(clip.number).sig = ""; poll(); } catch (e) { fail(e); } };
+  const title = h("input", { type: "text", class: "title", value: clip.title, "aria-label": "Título", onchange: e => save({ title: e.target.value }) });
+  const hook = h("input", { type: "text", class: "small", value: clip.hook || "", placeholder: "Texto de gancho en pantalla", onchange: e => save({ hook: e.target.value }) });
+  const caption = h("textarea", { onchange: e => save({ caption: e.target.value }) }); caption.value = clip.caption || "";
+  const tags = h("input", { type: "text", class: "small", style: "margin-top:6px", value: (clip.hashtags || []).map(t => "#" + t).join(" "), onchange: e => save({ hashtags: e.target.value.split(/[\s,]+/) }) });
+  const video = () => $("video", el);
+  const tbox = (label, key) => {
+    const input = h("input", { type: "number", step: "0.1", value: (+clip[key]).toFixed(2) });
+    const nudge = d => () => { input.value = (+input.value + d).toFixed(2); };
+    const here = () => { const vv = video(); if (vv) input.value = (clip.start + vv.currentTime).toFixed(2); };
+    return [input, h("div", { class: "timebox" }, h("div", { class: "mini", text: label }),
+      h("div", { class: "row" }, h("button", { class: "btn small", type: "button", text: "−½", onclick: nudge(-0.5) }), input, h("button", { class: "btn small", type: "button", text: "+½", onclick: nudge(0.5) })),
+      h("button", { class: "btn small ghost", type: "button", style: "width:100%;margin-top:4px", text: key === "start" ? "⇤ Empezar aquí" : "Terminar aquí ⇥", onclick: here }))];
+  };
+  const [sIn, sBox] = tbox("Inicio", "start"), [eIn, eBox] = tbox("Fin", "end");
+  const rerender = h("button", { class: "btn small", text: clip.dirty ? "Aplicar cambios (re‑render)" : "Re‑renderizar", onclick: async () => {
+    const start = +sIn.value, end = +eIn.value;
+    const changed = Math.abs(start - clip.start) > 0.01 || Math.abs(end - clip.end) > 0.01;
+    try { await api(`/api/jobs/${job.id}/clips/${clip.number}/${changed ? "trim" : "render"}`, { method: "POST", body: changed ? { start, end } : {} }); poll(); }
+    catch (e) { fail(e); } } });
+  const pubs = h("div", { class: "pubs" });
+  el.replaceChildren(vid, h("div", { class: "body" },
+    title,
+    h("div", {}, h("div", { class: "mini", text: "Gancho en pantalla" }), hook),
+    h("div", {}, h("div", { class: "mini", text: "Descripción para redes" }), caption, tags),
+    h("p", { class: "reason", text: "💡 " + (clip.reason || "") }),
+    h("div", {}, h("div", { class: "mini", text: `Corte · ${fmt(clip.start)} → ${fmt(clip.end)} · ${(clip.end - clip.start).toFixed(1)} s` }), h("div", { class: "times" }, sBox, eBox)),
+    clip.error ? h("div", { class: "warnline", text: "⚠ " + clip.error }) : null,
+    clip.dirty ? h("div", { class: "warnline", text: "Has cambiado el gancho: re‑renderiza para verlo en el vídeo." }) : null,
+    h("div", { class: "row" }, rerender,
+      clip.file ? h("a", { class: "btn small", href: `/files/${job.id}/${clip.file}?download=1`, text: "MP4 ↓" }) : null,
+      clip.srt ? h("a", { class: "btn small", href: `/files/${job.id}/${clip.srt}?download=1`, text: "SRT" }) : null,
+      h("button", { class: "btn small primary", text: "Publicar ↗", disabled: !clip.file || clip.status === "rendering", onclick: () => openPublish([clip.number]) })),
+    pubs));
+}
+function paintPubs(el, job, clip) {
+  const box = $(".pubs", el); if (!box) return;
+  const entries = Object.entries(clip.publications || {});
+  const sig = JSON.stringify(entries);
+  if (box.dataset.sig === sig) return;
+  box.dataset.sig = sig;
+  box.replaceChildren(...entries.map(([t, p]) => h("div", { class: "pub " + p.status },
+    h("b", { text: TARGET_LABEL[t] || t }),
+    h("span", { class: "st" }, p.url ? h("a", { href: p.url, target: "_blank", rel: "noopener", text: PUB_STATUS[p.status] + " ↗" }) : (p.status === "uploading" ? p.message : PUB_STATUS[p.status] || p.status),
+      p.status === "processing" ? h("button", { class: "btn small ghost", text: "↻", title: "Actualizar estado", onclick: async () => { try { await api(`/api/jobs/${job.id}/clips/${clip.number}/publication-status`, { method: "POST", body: { target: t } }); poll(); } catch (e) { fail(e); } } }) : null),
+    p.status === "uploading" ? h("div", { class: "pbar" }, h("i", { style: `width:${((p.progress || 0) * 100).toFixed(0)}%` })) : null,
+    (p.error || (p.message && p.status !== "uploading")) ? h("div", { class: "small muted", style: "flex-basis:100%", text: [p.error, p.message].filter(Boolean).join(" — ") }) : null)));
+}
+$("#reselectBtn").onclick = () => {
+  const o = S.job?.options || {};
+  $("#reCount").value = o.count || S.settings.clip_count; $("#reMin").value = o.min_seconds || S.settings.min_seconds; $("#reMax").value = o.max_seconds || S.settings.max_seconds;
+  $("#reInstr").value = o.instructions || ""; $("#reDlg").showModal();
+};
+$("#reGo").onclick = async e => {
+  e.preventDefault();
+  const body = { count: +$("#reCount").value, min_seconds: +$("#reMin").value, max_seconds: +$("#reMax").value, instructions: $("#reInstr").value };
+  if (!validOptions(body)) return;
+  try { await api(`/api/jobs/${S.jobId}/reselect`, { method: "POST", body }); $("#reDlg").close(); S.cards.clear(); $("#grid").replaceChildren(); openJob(S.jobId, true); } catch (err) { fail(err); }
+};
+$("#publishAllBtn").onclick = () => S.job && openPublish(S.job.clips.filter(c => c.file).map(c => c.number));
+
+/* ---------------------------------------------------------------- Publicar */
+function openPublish(numbers) {
+  S.pubClip = numbers;
+  const soc = S.status.social;
+  $("#pubWhat").textContent = numbers.length === 1 ? `Clip #${numbers[0]} · «${S.job.clips.find(c => c.number === numbers[0]).title}»` : `${numbers.length} clips`;
+  const rows = [];
+  for (const t of ["youtube", "tiktok", "instagram", "uploadpost"]) {
+    const st = soc[t]; const on = st.connected;
+    if (t === "uploadpost" && !on) continue;
+    let sub = on ? (st.account?.name ? `Conectado como ${st.account.name}` : "Conectado") : "No conectado";
+    if (t === "tiktok" && on) sub += S.settings.tiktok_mode === "draft" ? " · irá a tus borradores" : ` · publicación directa (${S.settings.tiktok_privacy})`;
+    if (t === "youtube" && on) sub += ` · ${ { public: "público", unlisted: "oculto", private: "privado" }[S.settings.youtube_privacy] }`;
+    rows.push(h("label", { class: "target" + (on ? "" : " off") }, h("input", { type: "checkbox", value: t, disabled: !on, checked: on && t !== "uploadpost" }),
+      h("div", {}, h("b", { text: TARGET_LABEL[t] }), h("div", { class: "sub", text: sub })),
+      on ? null : h("button", { class: "btn small", type: "button", style: "margin-left:auto", text: "Conectar", onclick: () => { $("#pubDlg").close(); openDrawer("redes"); } })));
+  }
+  rows.push(h("div", { class: "small muted", style: "margin-top:6px", text: "Las opciones de privacidad y modo de TikTok están en Ajustes → Redes." }));
+  $("#pubTargets").replaceChildren(...rows);
+  $("#pubDlg").showModal();
+}
+$("#pubGo").onclick = async e => {
+  e.preventDefault();
+  const targets = $$("#pubTargets input:checked").map(i => i.value);
+  if (!targets.length) { toast("Elige al menos una red conectada.", "bad"); return; }
+  $("#pubDlg").close();
+  for (const n of S.pubClip) {
+    try { await api(`/api/jobs/${S.jobId}/clips/${n}/publish`, { method: "POST", body: { targets, options: {} } }); }
+    catch (err) { fail(err); }
+  }
+  toast("Enviando…", "ok", "Verás el progreso en cada clip."); poll();
+};
+
+/* ---------------------------------------------------------------- Historial */
+async function loadHistory() {
+  try {
+    const { jobs } = await api("/api/jobs");
+    const box = $("#history");
+    if (!jobs.length) { box.replaceChildren(h("div", { class: "empty", text: "Aún no hay trabajos. ¡Pega tu primer enlace!" })); return; }
+    box.replaceChildren(...jobs.slice(0, 24).map(j => {
+      const status = { done: `${j.clips} clips`, error: "Error", running: "En marcha…", queued: "En cola", cancelled: "Cancelado" }[j.status] || j.status;
+      const item = h("div", { class: "hitem", role: "button", tabindex: "0", onclick: () => openJob(j.id, true) },
+        h("div", { class: "th", style: j.thumb ? `background-image:url("/files/${j.id}/${j.thumb}")` : "" }, j.thumb ? "" : "✂"),
+        h("div", { style: "min-width:0;flex:1" }, h("div", { class: "t", text: j.title }), h("div", { class: "s", text: `${status} · ${ago(j.created)}` })),
+        h("button", { class: "btn small ghost", title: "Borrar", "aria-label": "Borrar", text: "🗑", onclick: async ev => {
+          ev.stopPropagation();
+          if (!confirm("¿Borrar este trabajo y sus archivos?")) return;
+          try { await api(`/api/jobs/${j.id}/delete`, { method: "POST", body: {} }); if (S.jobId === j.id) { S.jobId = null; $("#results").hidden = true; $("#jobPanel").hidden = true; } loadHistory(); } catch (e) { fail(e); } } }));
+      return item;
+    }));
+    const running = jobs.find(j => ["running", "queued"].includes(j.status));
+    if (running && !S.jobId) openJob(running.id);
+  } catch (e) {}
+}
+
+/* ---------------------------------------------------------------- Ajustes */
+let currentTab = "ia";
+function openDrawer(tab) { currentTab = tab || currentTab; $("#drawer").classList.add("on"); $("#scrim").classList.add("on"); loadStatus().then(paintDrawer); }
+function closeDrawer() { $("#drawer").classList.remove("on"); $("#scrim").classList.remove("on"); }
+$("#openSettings").onclick = () => openDrawer();
+$("#closeSettings").onclick = closeDrawer; $("#scrim").onclick = closeDrawer;
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+$$(".chip[data-tab]").forEach(c => c.onclick = () => openDrawer(c.dataset.tab));
+$$("#tabs .tab").forEach(t => t.onclick = () => { currentTab = t.dataset.tab; paintDrawer(); });
+
+const sel = (key, options, label, hint) => h("div", { class: "field", style: "margin-bottom:12px" }, h("label", { text: label }),
+  h("select", { onchange: e => saveSettings({ [key]: e.target.value }, false) }, ...options.map(([v, t]) => { const o = h("option", { value: v, text: t }); if (String(S.settings[key]) === v) o.selected = true; return o; })),
+  hint ? h("div", { class: "small muted", style: "margin-top:4px", text: hint }) : null);
+const toggle = (key, label, hint) => h("label", { class: "check" }, h("input", { type: "checkbox", checked: !!S.settings[key], onchange: e => saveSettings({ [key]: e.target.checked }, false) }), h("span", {}, label, hint ? h("div", { class: "small muted", text: hint }) : null));
+function copyField(value) {
+  const input = h("input", { type: "text", value, readonly: true });
+  return h("div", { class: "copy" }, input, h("button", { class: "btn small", type: "button", text: "Copiar", onclick: () => { navigator.clipboard?.writeText(value).then(() => toast("Copiado", "ok"), () => { input.select(); document.execCommand("copy"); }); } }));
+}
+function credField(name, label, secret) {
+  const flag = S.status.credentials[name] || {};
+  const input = h("input", { type: secret ? "password" : "text", placeholder: secret ? (flag.set ? `Guardado (${flag.preview || "••••"}) · escribe para cambiar` : "Pega aquí") : "Pega aquí", value: secret ? "" : (flag.value || ""), "data-cred": name, autocomplete: "off" });
+  return h("div", { class: "field", style: "margin-bottom:10px" }, h("label", { text: label }), input);
+}
+async function saveCreds(root) {
+  const values = {};
+  $$("[data-cred]", root).forEach(i => { if (i.type !== "password" || i.value.trim()) values[i.dataset.cred] = i.value.trim(); });
+  try { await api("/api/credentials", { method: "POST", body: values }); toast("Credenciales guardadas en .env", "ok"); await loadStatus(); } catch (e) { fail(e); }
+}
+async function aiLogin(provider) {
+  try { const r = await api("/api/ai/login", { method: "POST", body: { provider } }); toast(r.message, "ok"); if (r.url) window.open(r.url, "_blank"); watchLogin(); } catch (e) { fail(e); }
+}
+function watchLogin() { let n = 0; const t = setInterval(async () => { n++; await api("/api/ai/refresh", { method: "POST", body: {} }).catch(() => {}); await loadStatus(); if (S.status.ai.active || n > 40) clearInterval(t); }, 3000); }
+async function aiTest(provider, btn) {
+  btn.disabled = true; const old = btn.textContent; btn.textContent = "Probando…";
+  try { const r = await api("/api/ai/test", { method: "POST", body: { provider } }); toast(`Conexión correcta: ${r.label}`, "ok"); await loadStatus(); }
+  catch (e) { fail(e); } finally { btn.disabled = false; btn.textContent = old; }
+}
+
+function paintDrawer() {
+  if (!S.status) return;
+  $$("#tabs .tab").forEach(t => t.classList.toggle("on", t.dataset.tab === currentTab));
+  const body = $("#dbody"); const st = S.status; const s = S.settings;
+  const out = [];
+  if (currentTab === "ia") {
+    const p = st.ai.providers;
+    const provBox = (id, title, desc, extra) => h("div", { class: "box" + (s.ai_provider === id ? " sel" : "") },
+      h("div", { class: "boxhead" }, h("h3", { text: title }), h("label", { class: "check", style: "padding:0" }, h("input", { type: "radio", name: "prov", checked: s.ai_provider === id, onchange: () => saveSettings({ ai_provider: id }, false).then(loadStatus) }), "Usar")),
+      h("div", { class: "small muted", text: desc }), extra);
+    out.push(h("p", { class: "muted small", text: "Corta Clips usa GPT‑6 Luna para elegir los momentos y escribir títulos. Conéctalo con tu cuenta de ChatGPT (OAuth, sin API key) o con una API key de OpenAI." }));
+    out.push(provBox("auto", "Automático", `Usa lo primero que esté conectado: API de OpenAI → ChatGPT → Claude. Ahora mismo: ${st.ai.label || "nada conectado"}.`));
+    const cx = p.codex;
+    out.push(provBox("codex", "ChatGPT · GPT‑6 Luna (OAuth)", "Inicia sesión con tu cuenta de ChatGPT (Plus/Pro/Business). Usa los límites de tu plan, sin coste por uso.",
+      h("div", {}, h("div", { class: "acct", style: "margin:10px 0" }, h("span", { class: "dot " + (cx.logged_in ? "ok" : cx.installed ? "warn" : "bad") }), cx.logged_in ? "Sesión iniciada con ChatGPT" : cx.installed ? "Codex instalado · falta iniciar sesión" : "Falta instalar Codex CLI"),
+        cx.installed ? null : h("div", {}, h("div", { class: "small muted", text: "Instálalo una vez (en Terminal):" }), copyField("npm install -g @openai/codex")),
+        h("div", { class: "row", style: "margin-top:10px" }, h("button", { class: "btn primary small", text: cx.logged_in ? "Volver a conectar" : "Conectar con ChatGPT", onclick: () => aiLogin("codex") }),
+          h("button", { class: "btn small", text: "Probar", onclick: e => aiTest("codex", e.target) })))));
+    out.push(provBox("openai", "API de OpenAI · GPT‑6 Luna", "Pago por uso (muy barato con Luna: céntimos por vídeo). También permite transcribir rápido con Whisper.",
+      h("div", { style: "margin-top:10px" }, credField("OPENAI_API_KEY", "OPENAI_API_KEY", true),
+        h("div", { class: "row" }, h("button", { class: "btn small primary", text: "Guardar", onclick: e => saveCreds(e.target.closest(".box")) }), h("button", { class: "btn small", text: "Probar", onclick: e => aiTest("openai", e.target) })))));
+    const cl = p.claude;
+    out.push(provBox("claude", "Claude (OAuth)", "Alternativa: tu suscripción de Claude a través de Claude Code.",
+      h("div", {}, h("div", { class: "acct", style: "margin:10px 0" }, h("span", { class: "dot " + (cl.logged_in ? "ok" : cl.installed ? "warn" : "bad") }), cl.logged_in ? "Sesión iniciada" : cl.installed ? "Claude Code instalado · falta iniciar sesión" : "Claude Code no instalado"),
+        cl.installed ? null : copyField("curl -fsSL https://claude.ai/install.sh | bash"),
+        h("div", { class: "row", style: "margin-top:10px" }, h("button", { class: "btn small", text: "Conectar con Claude", onclick: () => aiLogin("claude") }), h("button", { class: "btn small", text: "Probar", onclick: e => aiTest("claude", e.target) })))));
+    const model = h("input", { type: "text", value: s.ai_model, list: "models", onchange: e => saveSettings({ ai_model: e.target.value }, false) });
+    out.push(h("div", { class: "box" }, h("h3", { text: "Modelo" }), h("div", { class: "grid2", style: "margin-top:10px" },
+      h("div", { class: "field" }, h("label", { text: "Modelo de OpenAI" }), model, h("datalist", { id: "models" }, h("option", { value: "gpt-6-luna" }), h("option", { value: "gpt-6-sol" }))),
+      sel("ai_effort", [["none", "Ninguno (rápido)"], ["low", "Bajo"], ["medium", "Medio (recomendado)"], ["high", "Alto"], ["xhigh", "Muy alto"], ["max", "Máximo"]], "Razonamiento")),
+      h("div", { class: "field", style: "margin-top:10px" }, h("label", { text: "Modelo de Claude (opcional)" }), h("input", { type: "text", value: s.claude_model, placeholder: "vacío = el de tu cuenta · opus · sonnet", onchange: e => saveSettings({ claude_model: e.target.value }, false) }))));
+  } else if (currentTab === "tr") {
+    const e = st.transcription.engines;
+    out.push(h("div", { class: "box" }, h("h3", { text: "Motor de transcripción" }), h("div", { style: "margin-top:10px" },
+      sel("transcriber", [["auto", "Automático"], ["local", "Local en tu ordenador (gratis)"], ["openai", "Whisper de OpenAI (rápido, requiere API key)"]], "Motor",
+        `Disponible: ${[e.mlx && "GPU de Mac (mlx)", e.faster && "faster‑whisper", e.openai && "OpenAI"].filter(Boolean).join(", ") || "ninguno — abre iniciar.command para instalar la opción local"}. Activo: ${st.transcription.active || "—"}.`),
+      sel("local_model", [["auto", "Automático"], ["small", "Small (rápido)"], ["medium", "Medium"], ["large-v3-turbo", "Large v3 Turbo (máxima calidad)"]], "Modelo local", "La primera vez se descarga (0,5–1,6 GB)."),
+      sel("language", [["", "Detectar automáticamente"], ["es", "Español"], ["en", "Inglés"], ["pt", "Portugués"], ["ca", "Catalán"], ["fr", "Francés"], ["it", "Italiano"], ["de", "Alemán"]], "Idioma"))));
+  } else if (currentTab === "estilo") {
+    out.push(h("div", { class: "box" }, h("h3", { text: "Encuadre y sonido" }), h("div", { style: "margin-top:10px" },
+      sel("layout", [["auto", "Automático (sigue caras, si no hay → fondo difuminado)"], ["faces", "Siempre recortar a la cara"], ["blur", "Vídeo entero + fondo difuminado"], ["crop", "Recorte central"]], "Encuadre por defecto"),
+      toggle("loudnorm", "Normalizar volumen (−14 LUFS, estándar de redes)"),
+      toggle("hook_overlay", "Mostrar el gancho en pantalla los primeros 3 s"),
+      toggle("progress_bar", "Barra de progreso en la parte inferior"))));
+    out.push(h("div", { class: "box" }, h("h3", { text: "Subtítulos" }), h("div", { style: "margin-top:10px" },
+      sel("caption_position", [["bottom", "Abajo"], ["middle", "Centro"], ["top", "Arriba"]], "Posición"),
+      toggle("caption_uppercase", "Mayúsculas en estilos Karaoke y Caja"),
+      h("div", { class: "small muted", text: "Tipografía, color y estilo se eligen en la vista previa de la página principal." }))));
+    out.push(h("div", { class: "box" }, h("h3", { text: "Valores por defecto" }), h("div", { class: "grid2", style: "margin-top:10px" },
+      h("div", { class: "field" }, h("label", { text: "Clips" }), h("input", { type: "number", min: 1, max: 12, value: s.clip_count, onchange: e => saveSettings({ clip_count: +e.target.value }, false) })),
+      h("div", { class: "field" }, h("label", { text: "Duración (s)" }), h("div", { class: "range" }, h("input", { type: "number", value: s.min_seconds, onchange: e => saveSettings({ min_seconds: +e.target.value }, false) }), h("span", { text: "–" }), h("input", { type: "number", value: s.max_seconds, onchange: e => saveSettings({ max_seconds: +e.target.value }, false) }))))));
+  } else if (currentTab === "redes") {
+    out.push(h("p", { class: "muted small", text: "Conecta tus cuentas por OAuth: Corta Clips sube los vídeos directamente, sin intermediarios. Cada red pide crear una app de desarrollador gratuita (una sola vez)." }));
+    for (const p of ["youtube", "tiktok", "instagram"]) {
+      const info = st.social[p]; const setup = info.setup;
+      const box = h("div", { class: "box" + (info.connected ? " sel" : "") });
+      const acct = info.connected ? h("div", { class: "acct" }, info.account?.avatar ? h("img", { src: info.account.avatar, alt: "" }) : h("span", { class: "dot ok" }), h("b", { text: info.account?.name || "Conectado" })) : h("div", { class: "acct" }, h("span", { class: "dot " + (info.configured ? "warn" : "bad") }), info.configured ? "Listo para conectar" : "Falta configurar la app");
+      const connect = h("button", { class: "btn small " + (info.connected ? "" : "primary"), disabled: !info.configured, text: info.connected ? "Reconectar" : "Conectar", onclick: () => oauthConnect(p) });
+      const extra = [];
+      if (p === "youtube") extra.push(sel("youtube_privacy", [["public", "Público"], ["unlisted", "Oculto"], ["private", "Privado"]], "Visibilidad", "Sin auditoría de Google los vídeos quedan privados."));
+      if (p === "tiktok") extra.push(h("div", { class: "grid2" }, sel("tiktok_mode", [["draft", "Borrador (lo publicas desde la app)"], ["direct", "Publicación directa"]], "Modo"),
+        sel("tiktok_privacy", [["SELF_ONLY", "Solo yo"], ["MUTUAL_FOLLOW_FRIENDS", "Amigos"], ["FOLLOWER_OF_CREATOR", "Seguidores"], ["PUBLIC_TO_EVERYONE", "Todo el mundo"]], "Privacidad (directo)")));
+      if (p === "instagram") {
+        extra.push(credField("OAUTH_HTTPS_REDIRECT", "Página HTTPS de retorno (Netlify)", false));
+        const paste = h("input", { type: "text", placeholder: "Pega aquí la URL completa de la página de retorno" });
+        extra.push(h("details", { class: "more" }, h("summary", { text: "¿No volvió solo a Corta Clips?" }), h("div", { class: "copy" }, paste,
+          h("button", { class: "btn small", text: "Completar", onclick: async () => { try { await api("/oauth/complete", { method: "POST", body: { url: paste.value } }); toast("Instagram conectado", "ok"); loadStatus(); } catch (e) { fail(e); } } }))));
+      }
+      box.append(
+        h("div", { class: "boxhead" }, h("h3", { text: info.label }), h("div", { class: "row" }, connect, info.connected ? h("button", { class: "btn small ghost danger", text: "Desconectar", onclick: async () => { await api(`/api/social/${p}/disconnect`, { method: "POST", body: {} }); loadStatus(); } }) : null)),
+        acct, h("div", { style: "margin-top:12px" }, ...extra),
+        h("details", { class: "more", open: !info.configured }, h("summary", { text: "Configurar la app de desarrollador" }),
+          h("ol", { class: "steps" }, ...setup.steps.map(x => h("li", { text: x }))),
+          h("div", { class: "small muted", style: "margin-top:10px", text: "URL de redirección para registrar:" }), copyField(setup.redirect_uri),
+          h("div", { style: "margin-top:12px" }, ...setup.fields.map(f => credField(f, f.replaceAll("_", " "), f.includes("SECRET")))),
+          h("div", { class: "row" }, h("button", { class: "btn small primary", text: "Guardar", onclick: e => saveCreds(e.target.closest(".box")) }), h("a", { class: "btn small", href: setup.console, target: "_blank", rel: "noopener", text: "Abrir consola ↗" }))));
+      out.push(box);
+    }
+    const up = st.social.uploadpost;
+    const ub = h("div", { class: "box" }, h("div", { class: "boxhead" }, h("h3", { text: "Upload‑Post (alternativa)" }), h("span", { class: "small muted", text: up.configured ? "Configurado" : "Opcional" })),
+      h("div", { class: "small muted", text: "Servicio de pago que publica en las tres redes sin crear apps de desarrollador ni esperar auditorías." }),
+      h("div", { style: "margin-top:10px" }, credField("UPLOAD_POST_API_KEY", "API key", true), credField("UPLOAD_POST_USER", "Perfil (user)", false),
+        h("button", { class: "btn small primary", text: "Guardar", onclick: e => saveCreds(e.target.closest(".box")) })));
+    out.push(ub);
+  } else if (currentTab === "sistema") {
+    const item = (ok, label, hint) => [h("span", { text: ok ? "✅" : "⚠️" }), h("span", { text: label }), !ok && hint ? h("span", { class: "hint", text: hint }) : null];
+    out.push(h("div", { class: "box" }, h("h3", { text: "Diagnóstico" }), h("div", { class: "diag", style: "margin-top:12px" },
+      ...item(st.ffmpeg.ok, `ffmpeg ${st.ffmpeg.version || ""}`, "brew install ffmpeg"),
+      ...item(st.ffmpeg.x264, "Códec H.264 (libx264)", "Se usará el códec por hardware del Mac."),
+      ...item(st.ytdlp.ok, "yt-dlp (descargas)", "Abre iniciar.command para instalarlo."),
+      ...item(st.ytdlp.js_runtime, "Motor JavaScript para YouTube (deno/node)", "brew install deno"),
+      ...item(st.pillow, "Pillow (subtítulos)", "Abre iniciar.command."),
+      ...item(st.faces, "Detección de caras (OpenCV)", "Abre iniciar.command. Sin esto se usa el fondo difuminado."),
+      ...item(!!st.transcription.active, "Transcripción", "Abre iniciar.command o añade OPENAI_API_KEY."),
+      ...item(!!st.ai.active, "IA conectada", "Pestaña IA."))));
+    out.push(h("div", { class: "box" }, h("h3", { text: "Descargas" }), h("div", { style: "margin-top:10px" },
+      sel("cookies_browser", [["", "No usar cookies"], ["chrome", "Chrome"], ["safari", "Safari"], ["firefox", "Firefox"], ["edge", "Edge"], ["brave", "Brave"]], "Cookies del navegador para yt-dlp", "Úsalo si YouTube pide «confirmar que no eres un bot» o para vídeos privados/con edad. macOS puede pedir permiso."))));
+    out.push(h("div", { class: "small muted", text: `Corta Clips ${st.version} · Python ${st.python} · ${st.platform}` }));
+  }
+  body.replaceChildren(...out);
+}
+function oauthConnect(platform) {
+  const w = window.open(`/oauth/start/${platform}`, "cortaclips-oauth", "width=560,height=760");
+  if (!w) location.href = `/oauth/start/${platform}`;
+  let n = 0; const t = setInterval(async () => { n++; await loadStatus(); if (S.status.social[platform].connected || n > 100) { clearInterval(t); if (S.status.social[platform].connected) toast(`${TARGET_LABEL[platform]} conectado ✓`, "ok"); } }, 3000);
+}
+window.addEventListener("message", e => { if (e.data?.cortaclips === "oauth") loadStatus(); });
+
+loadStatus(); loadHistory();
+setInterval(() => { if (!document.hidden) loadStatus(); }, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# Web pública de Corta Clips: presentación, privacidad, términos y retorno OAuth de Instagram.
+# La app en sí se ejecuta en tu ordenador (python3 app.py); aquí no hay backend.
+[build]
+  publish = "site"
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "DENY"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  for = "/oauth/*"
+  [headers.values]
+    Cache-Control = "no-store"
+    Content-Security-Policy = "default-src 'none'; script-src 'unsafe-inline'; style-src 'self'; font-src 'self'"
