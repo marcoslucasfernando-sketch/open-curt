@@ -1,0 +1,2 @@
+# Python standard library only. Install ffmpeg and yt-dlp separately.
+
