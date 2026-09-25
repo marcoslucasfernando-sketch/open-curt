@@ -3,41 +3,149 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Corta Clips · de episodios largos a clips verticales</title>
-<meta name="description" content="Corta Clips convierte vídeos y podcasts largos en clips verticales con subtítulos animados y los publica en YouTube Shorts, TikTok e Instagram Reels. Se ejecuta en tu ordenador.">
+<title>Corta Clips · Convierte podcasts y vídeos en clips para TikTok, Reels y Shorts gratis</title>
+<meta name="description" content="App gratuita para Mac que convierte podcasts y vídeos largos en clips verticales con subtítulos animados. GPT‑6 Luna elige los mejores momentos, sigue las caras y publica en YouTube Shorts, TikTok e Instagram Reels.">
+<link rel="canonical" href="https://corta-clips.netlify.app/">
+<meta name="theme-color" content="#0b0d10">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Corta Clips">
+<meta property="og:locale" content="es_ES">
+<meta property="og:url" content="https://corta-clips.netlify.app/">
+<meta property="og:title" content="Corta Clips · Del episodio eterno a clips que enganchan">
+<meta property="og:description" content="Podcasts y vídeos → clips verticales con subtítulos animados. GPT‑6 Luna elige los mejores momentos. Gratis y en tu Mac.">
+<meta property="og:image" content="https://corta-clips.netlify.app/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Corta Clips: del episodio eterno a clips que enganchan">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Corta Clips · Del episodio eterno a clips que enganchan">
+<meta name="twitter:description" content="Convierte podcasts y vídeos en clips para TikTok, Reels y Shorts con subtítulos animados. Gratis y en tu Mac.">
+<meta name="twitter:image" content="https://corta-clips.netlify.app/og.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23d5f878'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle'%3E%E2%9C%82%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/fonts/Bricolage.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="stylesheet" href="/styles.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Corta Clips",
+      "url": "https://corta-clips.netlify.app/",
+      "image": "https://corta-clips.netlify.app/og.png",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "macOS, Linux, Windows",
+      "inLanguage": "es",
+      "description": "Convierte podcasts y vídeos largos en clips verticales con subtítulos animados y los publica en YouTube Shorts, TikTok e Instagram Reels.",
+      "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"},
+      "downloadUrl": "https://github.com/marcoslucasfernando-sketch/open-curt"
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {"@type": "Question", "name": "¿Corta Clips es gratis?", "acceptedAnswer": {"@type": "Answer", "text": "Sí. La app es gratuita y la transcripción funciona en tu ordenador sin coste. Para elegir los momentos puedes usar tu cuenta de ChatGPT o una API key de OpenAI, que cuesta céntimos por vídeo con GPT‑6 Luna."}},
+        {"@type": "Question", "name": "¿Funciona con podcasts que no tienen vídeo?", "acceptedAnswer": {"@type": "Answer", "text": "Sí. Los episodios solo de audio (MP3, M4A, Apple Podcasts, RSS) se convierten en audiogramas verticales con la carátula, una onda de audio animada y subtítulos."}},
+        {"@type": "Question", "name": "¿Publica directamente en TikTok, Instagram y YouTube?", "acceptedAnswer": {"@type": "Answer", "text": "Sí, mediante la conexión oficial OAuth de cada red. En TikTok también puedes mandar el clip a borradores para terminarlo desde el móvil."}},
+        {"@type": "Question", "name": "¿Se suben mis vídeos a algún servidor?", "acceptedAnswer": {"@type": "Answer", "text": "No. Todo se procesa en tu ordenador. Solo se envía la transcripción a la IA que elijas y el clip final a la red donde decidas publicarlo."}},
+        {"@type": "Question", "name": "¿Necesito saber programar?", "acceptedAnswer": {"@type": "Answer", "text": "No. Pegas un comando en Terminal una sola vez y después se abre con doble clic."}}
+      ]
+    }
+  ]
+}
+</script>
+<style>
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:48px;align-items:center}
+.hero h1{font-size:clamp(40px,5.4vw,74px)}
+.demo{width:100%;aspect-ratio:9/16;border-radius:34px;border:3px solid #343b46;background:#0a0c0f;padding:9px;box-shadow:0 40px 90px -30px #000;transform:rotate(3deg)}
+.demo .scr{height:100%;border-radius:26px;position:relative;overflow:hidden;background:linear-gradient(180deg,#3c4f63,#131a22)}
+.demo .face{position:absolute;left:32%;top:22%;width:36%;aspect-ratio:1;border-radius:50%;background:#c89c7e}
+.demo .body{position:absolute;left:14%;right:14%;top:44%;height:40%;border-radius:50% 50% 0 0;background:#2f4a6e}
+.demo .hook{position:absolute;left:13%;right:13%;top:48%;background:#fff;color:#111;border-radius:12px;padding:8px;text-align:center;font:800 14px/1.2 "DM Sans",sans-serif;animation:hook 6s infinite}
+.demo .cap{position:absolute;left:6%;right:6%;top:66%;text-align:center;font:800 26px/1.1 "Bricolage",sans-serif;color:#fff;-webkit-text-stroke:6px #000;paint-order:stroke fill;text-transform:uppercase}
+.demo .cap b{color:#ffe14d}
+.demo .bar{position:absolute;left:0;bottom:0;height:5px;background:var(--accent);animation:bar 6s linear infinite}
+@keyframes hook{0%,55%{opacity:1}65%,100%{opacity:0}}
+@keyframes bar{from{width:0}to{width:100%}}
+.install{margin-top:70px;background:linear-gradient(180deg,#171b22,#13171d);border:1px solid var(--line);border-radius:26px;padding:28px}
+.install p{color:var(--muted);margin:0 0 14px}
+.cmd{display:flex;gap:10px;align-items:stretch}
+.cmd pre{flex:1;min-width:0;margin:0;background:#0b0d10;border:1px solid var(--line);border-radius:14px;padding:14px 16px;overflow-x:auto;font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#e6f7c0;white-space:pre}
+.cmd button{background:var(--accent);color:var(--ink);border:0;border-radius:14px;padding:0 20px;font-weight:800;cursor:pointer;font-size:15px;white-space:nowrap}
+.faq{margin-top:70px}
+.faq details{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 20px;margin-bottom:10px}
+.faq summary{cursor:pointer;font-weight:700;font-size:17px}
+.faq details p{color:var(--muted);margin:10px 0 0}
+@media(max-width:860px){.hero{grid-template-columns:1fr}.demo{max-width:240px;margin:10px auto 0;transform:none}.cmd{flex-direction:column}.cmd button{padding:12px}}
+</style>
 </head>
 <body>
 <div class="wrap">
   <nav>
     <a class="brand" href="/"><span class="mark">✂</span>Corta Clips</a>
-    <div class="links"><a href="#como">Cómo funciona</a><a href="/privacidad">Privacidad</a><a href="/terminos">Términos</a></div>
+    <div class="links"><a href="#instalar">Instalar</a><a href="#como">Cómo funciona</a><a href="#faq">Preguntas</a><a href="https://github.com/marcoslucasfernando-sketch/open-curt">GitHub</a></div>
   </nav>
-  <div class="eyebrow">Estudio local · GPT‑6 Luna</div>
-  <h1>Del episodio eterno<br>a clips que <em>enganchan</em>.</h1>
-  <p class="lead">Corta Clips es una app que se ejecuta en tu propio ordenador. Pega un enlace o un archivo: la IA encuentra los mejores momentos, los recorta en vertical siguiendo las caras, añade subtítulos animados y los publica en tus redes con tu permiso.</p>
-  <div class="row">
-    <a class="btn" href="https://github.com/marcoslucasfernando-sketch/open-curt">Descargar desde GitHub ↗</a>
-    <a class="btn alt" href="#como">Ver cómo funciona</a>
-  </div>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Gratis · en tu Mac · GPT‑6 Luna</div>
+      <h1>Del episodio eterno<br>a clips que <em>enganchan</em>.</h1>
+      <p class="lead">Pega un enlace de YouTube, Apple Podcasts o un archivo. Corta Clips encuentra los mejores momentos, los recorta en vertical siguiendo las caras, añade subtítulos animados y los publica en <b>TikTok, Instagram Reels y YouTube Shorts</b>.</p>
+      <div class="row">
+        <a class="btn" href="#instalar">Instalar gratis ↓</a>
+        <a class="btn alt" href="https://github.com/marcoslucasfernando-sketch/open-curt">Ver el código ↗</a>
+      </div>
+    </div>
+    <div class="demo" aria-hidden="true"><div class="scr"><div class="face"></div><div class="body"></div><div class="hook">¿Sabías que esto lo cambia todo?</div><div class="cap" id="demoCap">esto es brutal</div><div class="bar"></div></div></div>
+  </section>
 
   <div class="grid">
     <div class="feat"><div class="ic">🎙️</div><h3>Vídeos y podcasts</h3><p>YouTube, Apple Podcasts, RSS, Twitch, Vimeo o tus archivos. Los podcasts sin vídeo se convierten en audiogramas con carátula y onda animada.</p></div>
     <div class="feat"><div class="ic">✦</div><h3>GPT‑6 Luna elige</h3><p>Busca ganchos, historias y remates; ajusta cada corte a frases completas y escribe título, gancho, descripción y hashtags.</p></div>
-    <div class="feat"><div class="ic">🎯</div><h3>Encuadre inteligente</h3><p>Pasa de 16:9 a 9:16 siguiendo las caras, con subtítulos palabra a palabra y tipografías cuidadas.</p></div>
-    <div class="feat"><div class="ic">↗</div><h3>Publica por OAuth</h3><p>Conexión oficial con YouTube, TikTok e Instagram. Los accesos se guardan solo en tu ordenador.</p></div>
+    <div class="feat"><div class="ic">🎯</div><h3>Encuadre inteligente</h3><p>Pasa de 16:9 a 9:16 siguiendo las caras, con subtítulos palabra a palabra y 7 tipografías cuidadas.</p></div>
+    <div class="feat"><div class="ic">↗</div><h3>Publica por OAuth</h3><p>Conexión oficial con YouTube, TikTok e Instagram. Tus accesos se quedan en tu ordenador.</p></div>
   </div>
+
+  <section class="install" id="instalar">
+    <h2>Instálalo en un minuto</h2>
+    <p>Abre <b>Terminal</b> en tu Mac, pega este comando y pulsa Enter. La primera vez instala lo necesario; después se abre con doble clic en <code>iniciar.command</code>.</p>
+    <div class="cmd"><pre id="cmd">cd ~ &amp;&amp; curl -L -o cc.zip https://github.com/marcoslucasfernando-sketch/open-curt/archive/refs/heads/claude/eager-archimedes-5n5qdb.zip &amp;&amp; unzip -q cc.zip &amp;&amp; rm cc.zip &amp;&amp; mv open-curt-claude-eager-archimedes-5n5qdb CortaClips &amp;&amp; cd CortaClips &amp;&amp; ./iniciar.command</pre><button id="copyCmd" type="button">Copiar</button></div>
+    <p style="margin-top:14px;font-size:14px">¿Te dice que falta Homebrew? Instálalo desde <a href="https://brew.sh/es/">brew.sh</a> y vuelve a pegar el comando. ¿Linux o Windows? Sigue el <a href="https://github.com/marcoslucasfernando-sketch/open-curt#empezar-mac">README</a>.</p>
+  </section>
 
   <section id="como" class="steps">
     <h2>Cómo funciona</h2>
-    <div class="step"><h3>Instala y abre</h3><p>Descarga el proyecto y haz doble clic en <code>iniciar.command</code>. Instala lo necesario y abre la app en <code>http://127.0.0.1:8766</code>.</p></div>
+    <div class="step"><h3>Instala y abre</h3><p>Pega el comando de arriba. Se abre la app en tu navegador, en <code>http://127.0.0.1:8766</code>.</p></div>
     <div class="step"><h3>Conecta la IA</h3><p>Inicia sesión con tu cuenta de ChatGPT (OAuth) o añade una API key de OpenAI para usar GPT‑6 Luna.</p></div>
-    <div class="step"><h3>Crea clips</h3><p>Pega el enlace, elige cuántos clips y su duración. Revisa, ajusta el corte y edita textos si quieres.</p></div>
-    <div class="step"><h3>Publica</h3><p>Conecta YouTube, TikTok o Instagram una vez y publica cada clip con un clic. Esta web solo sirve de página de retorno segura para el inicio de sesión de Instagram.</p></div>
+    <div class="step"><h3>Crea clips</h3><p>Pega el enlace, elige cuántos clips y su duración. Revisa, ajusta el corte y edita los textos si quieres.</p></div>
+    <div class="step"><h3>Publica</h3><p>Conecta YouTube, TikTok o Instagram una vez y publica cada clip con un clic.</p></div>
   </section>
 
-  <footer><span>Corta Clips · software que se ejecuta en tu ordenador</span><span><a href="/privacidad">Privacidad</a> · <a href="/terminos">Términos</a> · <a href="/eliminacion-datos">Eliminación de datos</a></span></footer>
+  <section class="faq" id="faq">
+    <h2>Preguntas frecuentes</h2>
+    <details><summary>¿Es gratis?</summary><p>Sí. La app es gratuita y la transcripción funciona en tu ordenador sin coste. Para elegir los momentos puedes usar tu cuenta de ChatGPT o una API key de OpenAI, que cuesta céntimos por vídeo con GPT‑6 Luna.</p></details>
+    <details><summary>¿Funciona con podcasts que no tienen vídeo?</summary><p>Sí. Los episodios solo de audio (MP3, M4A, Apple Podcasts, RSS) se convierten en audiogramas verticales con la carátula, una onda de audio animada y subtítulos.</p></details>
+    <details><summary>¿Publica directamente en TikTok, Instagram y YouTube?</summary><p>Sí, mediante la conexión oficial OAuth de cada red. En TikTok también puedes mandar el clip a borradores para terminarlo desde el móvil.</p></details>
+    <details><summary>¿Se suben mis vídeos a algún servidor?</summary><p>No. Todo se procesa en tu ordenador. Solo se envía la transcripción a la IA que elijas y el clip final a la red donde decidas publicarlo.</p></details>
+    <details><summary>¿Necesito saber programar?</summary><p>No. Pegas un comando en Terminal una sola vez y después se abre con doble clic.</p></details>
+  </section>
+
+  <footer><span>Corta Clips · software gratuito que se ejecuta en tu ordenador</span><span><a href="/privacidad">Privacidad</a> · <a href="/terminos">Términos</a> · <a href="/eliminacion-datos">Eliminación de datos</a></span></footer>
 </div>
+<script>
+(function () {
+  var words = ["esto", "es", "brutal"], i = 0, cap = document.getElementById("demoCap");
+  setInterval(function () {
+    cap.innerHTML = words.map(function (w, k) { return k === i ? "<b>" + w + "</b>" : w; }).join(" ");
+    i = (i + 1) % words.length;
+  }, 650);
+  document.getElementById("copyCmd").onclick = function () {
+    var text = document.getElementById("cmd").textContent, btn = this;
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () { btn.textContent = "¡Copiado!"; },
+      function () { var r = document.createRange(); r.selectNodeContents(document.getElementById("cmd")); getSelection().removeAllRanges(); getSelection().addRange(r); btn.textContent = "Cmd+C"; });
+  };
+})();
+</script>
 </body>
 </html>
