@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import queue
+import re
 import secrets
 import shutil
 import threading
 import time
+import zipfile
 from pathlib import Path
 
 from . import brain, config, render, sources, transcribe
@@ -15,6 +17,19 @@ from .util import Cancelled, JobContext, UserError, format_exception
 
 STAGES = {"download": (0.0, 0.15), "transcribe": (0.15, 0.55), "select": (0.55, 0.65), "render": (0.65, 1.0)}
 CLIP_TEXT_FIELDS = ("title", "hook", "caption", "hashtags")
+
+
+def safe_name(text: str, limit: int = 60) -> str:
+    """Nombre de archivo legible y válido en Mac, Windows y Linux (sin emojis ni símbolos prohibidos)."""
+    text = re.sub(r'[\\/:*?"<>|\x00-\x1f]', " ", text or "")
+    text = "".join(ch for ch in text if ord(ch) < 0x2000)
+    text = " ".join(text.split()).strip(" .")
+    return text[:limit].rstrip(" .") or "clip"
+
+
+def _fmt(seconds: float) -> str:
+    seconds = max(0, int(round(seconds)))
+    return f"{seconds // 3600}:{seconds // 60 % 60:02d}:{seconds % 60:02d}" if seconds >= 3600 else f"{seconds // 60}:{seconds % 60:02d}"
 
 
 class JobManager:
@@ -141,6 +156,42 @@ class JobManager:
                      options={**job.get("options", {}), **options})
         self.queue.put(("reselect", job_id))
         return self.get(job_id)
+
+    def build_zip(self, job_id: str) -> tuple[Path, str]:
+        """Empaqueta todos los clips, sus subtítulos y los textos para redes. Devuelve (ruta, nombre de descarga)."""
+        job = self._require(job_id)
+        folder = self.outputs / job_id
+        clips = [c for c in job.get("clips", []) if c.get("file") and (folder / c["file"]).is_file()]
+        if not clips:
+            raise UserError("Todavía no hay clips para descargar.", "Espera a que termine el render.")
+        title = (job.get("source") or {}).get("title") or "Corta Clips"
+        summary = [f"{title}\n{'=' * min(len(title), 70)}\n"]
+        manifest = []
+        target = folder / "descarga.zip"
+        temp = folder / "descarga.zip.tmp"
+        with zipfile.ZipFile(temp, "w") as archive:
+            for clip in clips:
+                stem = f"{clip['number']:02d} - {safe_name(clip.get('title', ''))}"
+                # El MP4 ya está comprimido: se guarda tal cual para que el ZIP se genere al instante.
+                archive.write(folder / clip["file"], f"{stem}.mp4", compress_type=zipfile.ZIP_STORED)
+                if clip.get("srt") and (folder / clip["srt"]).is_file():
+                    archive.write(folder / clip["srt"], f"{stem}.srt", compress_type=zipfile.ZIP_DEFLATED)
+                if clip.get("thumb") and (folder / clip["thumb"]).is_file():
+                    archive.write(folder / clip["thumb"], f"miniaturas/{stem}.jpg", compress_type=zipfile.ZIP_STORED)
+                tags = " ".join("#" + t for t in clip.get("hashtags", []))
+                summary.append(
+                    f"\n#{clip['number']} · {clip.get('title', '')}\n"
+                    f"Archivo: {stem}.mp4 · Tramo original {_fmt(clip['start'])}–{_fmt(clip['end'])} · {clip['end'] - clip['start']:.1f} s · {clip.get('score', 0)}/100\n"
+                    f"Gancho: {clip.get('hook', '')}\n"
+                    f"Descripción: {clip.get('caption', '')}\n"
+                    f"Hashtags: {tags}\n"
+                    f"Por qué funciona: {clip.get('reason', '')}\n"
+                )
+                manifest.append({k: clip.get(k) for k in ("number", "title", "hook", "caption", "hashtags", "reason", "score", "start", "end")} | {"file": f"{stem}.mp4"})
+            archive.writestr("textos-para-redes.txt", "".join(summary), compress_type=zipfile.ZIP_DEFLATED)
+            archive.writestr("clips.json", json.dumps({"source": title, "clips": manifest}, ensure_ascii=False, indent=2), compress_type=zipfile.ZIP_DEFLATED)
+        temp.replace(target)
+        return target, f"{safe_name(title, 50)} - clips.zip"
 
     def cancel(self, job_id: str) -> None:
         job = self._require(job_id)

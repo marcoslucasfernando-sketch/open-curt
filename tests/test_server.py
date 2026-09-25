@@ -1,11 +1,13 @@
 """Pruebas HTTP del servidor local: seguridad, rutas y subida de archivos."""
 
 import http.client
+import io
 import json
 import os
 import tempfile
 import threading
 import unittest
+import zipfile
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 from unittest.mock import patch
@@ -100,6 +102,36 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(self.request("GET", f"/files/{job['id']}/source.mp3")[0], 404)  # el original no se sirve
         self.assertEqual(self.request("GET", f"/files/{job['id']}/..%2F..%2Fapp.py")[0], 404)
         self.assertEqual(self.request("POST", "/api/upload", body=b"x", headers={"X-Filename": "virus.exe"})[0], 400)
+
+    def test_download_all_as_zip(self):
+        job, source = server.MANAGER.create_upload("episodio.mp3", {})
+        folder = source.parent
+        for name in ("clip_01.mp4", "clip_01.srt", "clip_02.mp4"):
+            (folder / name).write_bytes(b"datos " + name.encode())
+        clips = [
+            {"number": 1, "title": "¿Qué harías tú? 🚀", "hook": "Gancho", "caption": "Texto", "hashtags": ["uno"], "reason": "r", "score": 90,
+             "start": 10, "end": 40, "file": "clip_01.mp4", "srt": "clip_01.srt", "status": "ready", "publications": {}},
+            {"number": 2, "title": "Otro/clip: bueno", "hook": "", "caption": "", "hashtags": [], "reason": "", "score": 70,
+             "start": 50, "end": 80, "file": "clip_02.mp4", "status": "ready", "publications": {}},
+        ]
+        server.MANAGER._update(job["id"], status="done", clips=clips, source={"title": "Mi Podcast: episodio 1"})
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=20)
+        conn.request("GET", f"/api/jobs/{job['id']}/zip", headers={"Host": f"127.0.0.1:{self.port}"})
+        response = conn.getresponse()
+        data = response.read()
+        conn.close()
+        self.assertEqual(response.status, 200)
+        self.assertIn("attachment", response.getheader("Content-Disposition"))
+        self.assertIn("Mi%20Podcast%20episodio%201%20-%20clips.zip", response.getheader("Content-Disposition"))
+        names = zipfile.ZipFile(io.BytesIO(data)).namelist()
+        self.assertIn("01 - ¿Qué harías tú.mp4", names)
+        self.assertIn("01 - ¿Qué harías tú.srt", names)
+        self.assertIn("02 - Otro clip bueno.mp4", names)
+        self.assertIn("textos-para-redes.txt", names)
+        text = zipfile.ZipFile(io.BytesIO(data)).read("textos-para-redes.txt").decode()
+        self.assertIn("#uno", text)
+        empty, _ = server.MANAGER.create_upload("vacio.mp3", {})
+        self.assertEqual(self.request("GET", f"/api/jobs/{empty['id']}/zip")[0], 400)
 
     def test_oauth_callback_with_unknown_state_is_rejected(self):
         status, body = self.request("GET", "/oauth/callback?state=8766.tiktok.fake&code=abc")

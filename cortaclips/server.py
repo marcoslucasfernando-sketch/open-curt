@@ -144,7 +144,7 @@ class Handler(BaseHTTPRequestHandler):
             raise UserError("JSON inválido.")
         return data
 
-    def send_file(self, path: Path, cache: bool = False) -> None:
+    def send_file(self, path: Path, cache: bool = False, download_name: str = "") -> None:
         size = path.stat().st_size
         requested = self.headers.get("Range", "")
         start, end = 0, size - 1
@@ -174,7 +174,10 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "public, max-age=86400" if cache else "no-cache")
         if requested:
             self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
-        if "download" in urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query):
+        if download_name:
+            fallback = download_name.encode("ascii", "ignore").decode().replace('"', "") or "descarga.zip"
+            self.send_header("Content-Disposition", f"attachment; filename=\"{fallback}\"; filename*=UTF-8''{urllib.parse.quote(download_name)}")
+        elif "download" in urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query):
             self.send_header("Content-Disposition", f'attachment; filename="{path.name}"')
         self.end_headers()
         with path.open("rb") as handle:
@@ -212,6 +215,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(200, system_status())
             elif path == "/api/jobs":
                 self.send_json(200, {"jobs": MANAGER.summaries()})
+            elif path.startswith("/api/jobs/") and path.endswith("/zip") and len(path.split("/")) == 5:
+                archive, name = MANAGER.build_zip(path.split("/")[3])
+                self.send_file(archive, download_name=name)
             elif path.startswith("/api/jobs/"):
                 job = MANAGER.get(path.split("/")[3])
                 self.send_json(200, job) if job else self.send_json(404, {"error": "Trabajo no encontrado."})

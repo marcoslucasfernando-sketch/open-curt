@@ -293,6 +293,7 @@ dialog::backdrop{background:#000a;backdrop-filter:blur(3px)}
     <div class="sectionhead">
       <div><div class="eyebrow">Resultados</div><h2 id="resTitle">Tus clips</h2><div class="meta" id="resMeta"></div></div>
       <div class="actions">
+        <a class="btn primary" id="zipBtn" href="#" download>⇩ Descargar todo (.zip)</a>
         <button class="btn" id="reselectBtn">↻ Elegir otros momentos</button>
         <button class="btn" id="publishAllBtn">Publicar todos</button>
       </div>
@@ -557,6 +558,11 @@ function paintResults(job) {
   if (job.ai) bits.push(`Selección: ${job.ai}`);
   if (job.transcription?.engine) bits.push(`Transcripción: ${job.transcription.engine === "openai" ? "Whisper API" : "local " + (job.transcription.model || "")}`);
   $("#resMeta").textContent = bits.join(" · ");
+  const ready = job.clips.filter(c => c.file && c.status !== "rendering").length;
+  const zip = $("#zipBtn");
+  zip.href = `/api/jobs/${job.id}/zip?v=${Math.max(0, ...job.clips.map(c => c.rendered_at || 0))}`;
+  zip.textContent = `⇩ Descargar todo (${ready} clip${ready === 1 ? "" : "s"}, .zip)`;
+  zip.style.pointerEvents = ready ? "" : "none"; zip.style.opacity = ready ? "" : ".5";
   const grid = $("#grid");
   const seen = new Set();
   for (const clip of job.clips) {
