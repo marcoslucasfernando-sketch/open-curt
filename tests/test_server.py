@@ -30,6 +30,8 @@ class ServerTests(unittest.TestCase):
         for p in cls.patches:
             p.start()
         cls.httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
+        cls.httpd.daemon_threads = True  # no esperar a conexiones keep-alive al cerrar
+        cls.httpd.block_on_close = False
         cls.port = cls.httpd.server_address[1]
         cls.env = patch.dict(os.environ, {"CORTACLIPS_PORT": str(cls.port)})
         cls.env.start()

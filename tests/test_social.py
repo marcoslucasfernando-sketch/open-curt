@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from cortaclips import config, social
-from cortaclips.social import instagram, oauth, tiktok, youtube
+from cortaclips.social import instagram, oauth, tiktok, uploadpost, youtube
 from cortaclips.social.oauth import SocialError
 
 ENV = {
@@ -199,6 +199,59 @@ class InstagramTests(TempData):
         self.assertIs(instagram.refresh(token), token)
 
 
+class QuickConnectTests(TempData):
+    def setUp(self):
+        super().setUp()
+        self.env_file = Path(self.temp.name) / ".env"
+        self.extra = [patch.object(config, "ENV_FILE", self.env_file), patch.dict(os.environ, {"UPLOAD_POST_API_KEY": "up-key", "UPLOAD_POST_USER": ""})]
+        for p in self.extra:
+            p.start()
+        uploadpost.invalidate()
+
+    def tearDown(self):
+        for p in reversed(self.extra):
+            p.stop()
+        uploadpost.invalidate()
+        super().tearDown()
+
+    def test_profile_is_created_and_saved(self):
+        fake = FakeHttp([(200, {"profiles": []}, {}), (201, {"success": True, "profile": {"username": "cortaclips"}}, {})])
+        with patch("cortaclips.social.uploadpost.http", fake):
+            self.assertEqual(uploadpost.ensure_profile(), "cortaclips")
+        self.assertEqual(fake.calls[1][2]["json_body"], {"username": "cortaclips"})
+        self.assertEqual(os.environ["UPLOAD_POST_USER"], "cortaclips")
+        self.assertIn("UPLOAD_POST_USER=cortaclips", self.env_file.read_text(encoding="utf-8"))
+
+    def test_existing_profile_is_reused(self):
+        fake = FakeHttp([(200, {"profiles": [{"username": "mio"}]}, {})])
+        with patch("cortaclips.social.uploadpost.http", fake):
+            self.assertEqual(uploadpost.ensure_profile(), "mio")
+
+    def test_accounts_and_connect_url(self):
+        os.environ["UPLOAD_POST_USER"] = "mio"
+        profile = {"profile": {"social_accounts": {"youtube": {"display_name": "Mi canal", "social_images": "http://img"}, "tiktok": "", "instagram": None}}}
+        fake = FakeHttp([(200, profile, {}), (200, {"success": True, "authorize_url": "https://accounts.google.com/o/oauth2/auth?x=1"}, {})])
+        with patch("cortaclips.social.uploadpost.http", fake):
+            self.assertEqual(uploadpost.accounts(), {"youtube": {"name": "Mi canal", "avatar": "http://img", "reauth": False}})
+            url = uploadpost.connect_url("tiktok")
+        self.assertTrue(url.startswith("https://accounts.google.com"))
+        method, endpoint, kwargs = fake.calls[1]
+        self.assertTrue(endpoint.endswith("/api/uploadposts/oauth/tiktok/start"))
+        self.assertEqual(kwargs["json_body"]["profile"], "mio")
+        self.assertIn("/?conectado=tiktok", kwargs["json_body"]["redirect_url"])
+        self.assertEqual(kwargs["headers"]["Authorization"], "Apikey up-key")
+
+    def test_status_combines_direct_and_quick(self):
+        oauth.set_token("youtube", {"access_token": "a", "expires_at": time.time() + 3600, "account": {"name": "Directo"}})
+        with patch.object(uploadpost, "accounts", return_value={"youtube": {"name": "Rápido"}, "tiktok": {"name": "tt", "reauth": True}}):
+            status = social.status()
+        self.assertEqual((status["youtube"]["via"], status["youtube"]["account"]["name"]), ("direct", "Directo"))
+        self.assertEqual(status["tiktok"]["via"], "quick")
+        self.assertTrue(status["tiktok"]["reauth"])
+        self.assertFalse(status["instagram"]["connected"])
+        self.assertTrue(status["quick"]["configured"])
+
+
 class PublisherTests(TempData):
     def test_publish_records_result_on_clip(self):
         from cortaclips.pipeline import JobManager
@@ -221,6 +274,36 @@ class PublisherTests(TempData):
         self.assertEqual(record["url"], "https://youtube.com/shorts/v")
         with self.assertRaises(SocialError):
             publisher.publish(job["id"], 1, ["tiktok"], {})  # no conectado
+
+    def test_routes_direct_and_groups_quick_platforms(self):
+        from cortaclips.pipeline import JobManager
+
+        manager = JobManager(Path(self.temp.name) / "outputs2")
+        job, target = manager.create_upload("demo.mp4", {})
+        (target.parent / "clip_01.mp4").write_bytes(b"\x00" * 10)
+        manager._update(job["id"], status="done", clips=[{**CLIP, "file": "clip_01.mp4", "status": "ready", "publications": {}}])
+        oauth.set_token("youtube", {"access_token": "a", "expires_at": time.time() + 3600})
+        quick_calls = []
+
+        def fake_quick(video, clip, job_id, progress, platforms):
+            quick_calls.append(list(platforms))
+            return {"status": "processing", "id": "req-1", "url": "", "message": "Enviado"}
+
+        publisher = social.Publisher(manager)
+        with patch.object(uploadpost, "accounts", return_value={"tiktok": {"name": "tt"}, "instagram": {"name": "ig"}}), \
+             patch.object(uploadpost, "publish", side_effect=fake_quick), \
+             patch.object(youtube, "publish", return_value={"status": "published", "id": "v", "url": "u", "message": "ok"}):
+            publisher.publish(job["id"], 1, ["youtube", "tiktok", "instagram"], {})
+            for _ in range(60):
+                pubs = manager.get(job["id"])["clips"][0]["publications"]
+                if all(p["status"] != "uploading" for p in pubs.values()):
+                    break
+                time.sleep(0.05)
+        self.assertEqual(quick_calls, [["tiktok", "instagram"]])
+        self.assertEqual(pubs["youtube"]["via"], "direct")
+        self.assertEqual(pubs["youtube"]["status"], "published")
+        self.assertEqual((pubs["tiktok"]["via"], pubs["tiktok"]["status"], pubs["tiktok"]["id"]), ("quick", "processing", "req-1"))
+        self.assertEqual(pubs["instagram"]["status"], "processing")
 
 
 if __name__ == "__main__":

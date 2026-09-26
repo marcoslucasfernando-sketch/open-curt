@@ -196,6 +196,11 @@ details.more textarea{margin-top:10px}
 .check{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px;cursor:pointer}
 .check input{width:18px;height:18px;accent-color:var(--accent)}
 .acct{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.netrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.boxhead + .netrow{border-top:0}
+.netic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-weight:800;flex:none;background:#232932;color:#fff;object-fit:cover}
+.netic.yt{background:#ff2d2d}.netic.tt{background:#111;box-shadow:inset 0 0 0 1px #3a3f46}.netic.ig{background:linear-gradient(135deg,#feda75,#d62976 50%,#4f5bd5)}
+.okline{color:var(--ok)}
 .acct img{width:24px;height:24px;border-radius:50%}
 .diag{display:grid;grid-template-columns:22px 1fr;gap:6px 10px;font-size:14px}
 .diag .hint{grid-column:2;color:var(--dim);font-size:12.5px;margin-top:-4px}
@@ -648,17 +653,16 @@ function openPublish(numbers) {
   const soc = S.status.social;
   $("#pubWhat").textContent = numbers.length === 1 ? `Clip #${numbers[0]} · «${S.job.clips.find(c => c.number === numbers[0]).title}»` : `${numbers.length} clips`;
   const rows = [];
-  for (const t of ["youtube", "tiktok", "instagram", "uploadpost"]) {
-    const st = soc[t]; const on = st.connected;
-    if (t === "uploadpost" && !on) continue;
-    let sub = on ? (st.account?.name ? `Conectado como ${st.account.name}` : "Conectado") : "No conectado";
-    if (t === "tiktok" && on) sub += S.settings.tiktok_mode === "draft" ? " · irá a tus borradores" : ` · publicación directa (${S.settings.tiktok_privacy})`;
-    if (t === "youtube" && on) sub += ` · ${ { public: "público", unlisted: "oculto", private: "privado" }[S.settings.youtube_privacy] }`;
-    rows.push(h("label", { class: "target" + (on ? "" : " off") }, h("input", { type: "checkbox", value: t, disabled: !on, checked: on && t !== "uploadpost" }),
+  for (const t of ["youtube", "tiktok", "instagram"]) {
+    const st = soc[t]; const on = st.connected && !st.reauth;
+    let sub = st.reauth ? "Hay que volver a conectar" : on ? (st.account?.name ? `Conectado como ${st.account.name}` : "Conectado") : "No conectado";
+    if (t === "tiktok" && on && st.via === "direct") sub += S.settings.tiktok_mode === "draft" ? " · irá a tus borradores" : ` · publicación directa (${S.settings.tiktok_privacy})`;
+    if (t === "youtube" && on && st.via === "direct") sub += ` · ${ { public: "público", unlisted: "oculto", private: "privado" }[S.settings.youtube_privacy] }`;
+    rows.push(h("label", { class: "target" + (on ? "" : " off") }, h("input", { type: "checkbox", value: t, disabled: !on, checked: on }),
       h("div", {}, h("b", { text: TARGET_LABEL[t] }), h("div", { class: "sub", text: sub })),
       on ? null : h("button", { class: "btn small", type: "button", style: "margin-left:auto", text: "Conectar", onclick: () => { $("#pubDlg").close(); openDrawer("redes"); } })));
   }
-  rows.push(h("div", { class: "small muted", style: "margin-top:6px", text: "Las opciones de privacidad y modo de TikTok están en Ajustes → Redes." }));
+  rows.push(h("div", { class: "small muted", style: "margin-top:6px", text: "¿Falta alguna red? Conéctala en Ajustes → Redes con un clic." }));
   $("#pubTargets").replaceChildren(...rows);
   $("#pubDlg").showModal();
 }
@@ -786,12 +790,45 @@ function paintDrawer() {
       h("div", { class: "field" }, h("label", { text: "Clips" }), h("input", { type: "number", min: 1, max: 12, value: s.clip_count, onchange: e => saveSettings({ clip_count: +e.target.value }, false) })),
       h("div", { class: "field" }, h("label", { text: "Duración (s)" }), h("div", { class: "range" }, h("input", { type: "number", value: s.min_seconds, onchange: e => saveSettings({ min_seconds: +e.target.value }, false) }), h("span", { text: "–" }), h("input", { type: "number", value: s.max_seconds, onchange: e => saveSettings({ max_seconds: +e.target.value }, false) }))))));
   } else if (currentTab === "redes") {
-    out.push(h("p", { class: "muted small", text: "Conecta tus cuentas por OAuth: Corta Clips sube los vídeos directamente, sin intermediarios. Cada red pide crear una app de desarrollador gratuita (una sola vez)." }));
+    const q = st.social.quick;
+    const NET = {
+      youtube: ["▶", "yt", "YouTube Shorts", "Entras con tu cuenta de Google."],
+      tiktok: ["♪", "tt", "TikTok", "Puedes usar «Continuar con Google»."],
+      instagram: ["◎", "ig", "Instagram Reels", "Con tu usuario de Instagram o Facebook (Instagram no admite Google). Debe ser cuenta profesional."],
+    };
+    const quick = h("div", { class: "box sel" }, h("div", { class: "boxhead" }, h("h3", { text: "Conecta tus redes" }), h("span", { class: "small muted", text: "Conexión rápida" })));
+    if (!q.configured) {
+      quick.append(
+        h("p", { class: "small muted", text: "Solo una vez: crea tu cuenta gratuita en Upload‑Post (puedes entrar con Google) y pega aquí tu API key. Después conectas cada red con un botón: inicias sesión y listo, sin crear apps ni configurar nada más." }),
+        h("ol", { class: "steps" },
+          h("li", {}, "Crea tu cuenta en ", h("a", { href: q.signup, target: "_blank", rel: "noopener", text: "app.upload-post.com ↗" }), " con «Continuar con Google»."),
+          h("li", { text: "Ve a «API Keys», crea una y cópiala." }),
+          h("li", { text: "Pégala aquí y pulsa Guardar." })),
+        h("div", { style: "margin-top:12px" }, credField("UPLOAD_POST_API_KEY", "API key de Upload‑Post", true),
+          h("button", { class: "btn primary small", text: "Guardar", onclick: e => saveCreds(e.target.closest(".box")) })));
+    } else {
+      for (const p of ["youtube", "tiktok", "instagram"]) {
+        const info = st.social[p]; const [icon, cls, name, hint] = NET[p];
+        const good = info.connected && !info.reauth;
+        const line = info.reauth ? "Hay que volver a conectar" : info.connected
+          ? (info.account?.name ? `Conectado: ${info.account.name}` : "Conectado") + (info.via === "direct" ? " · conexión directa" : "") : hint;
+        quick.append(h("div", { class: "netrow" },
+          info.account?.avatar ? h("img", { class: "netic", src: info.account.avatar, alt: "" }) : h("span", { class: "netic " + cls, text: icon }),
+          h("div", { style: "flex:1;min-width:0" }, h("b", { text: name }), h("div", { class: "small " + (good ? "okline" : "muted"), text: line })),
+          h("button", { class: "btn small " + (good ? "" : "primary"), text: good ? "Reconectar" : "Conectar", onclick: () => quickConnect(p) })));
+      }
+      quick.append(h("div", { class: "small muted", style: "margin-top:12px", text: "Plan gratuito de Upload‑Post: 10 publicaciones al mes en YouTube e Instagram. Publicar en TikTok requiere un plan de pago." }),
+        h("details", { class: "more" }, h("summary", { text: "Cambiar la API key" }), h("div", { style: "margin-top:10px" }, credField("UPLOAD_POST_API_KEY", "API key", true),
+          h("button", { class: "btn small", text: "Guardar", onclick: e => saveCreds(e.target.closest("details")) }))));
+    }
+    out.push(quick);
+    const adv = h("details", { class: "more", style: "margin-top:20px" }, h("summary", { text: "Avanzado: conexión directa con tus propias apps de desarrollador (gratis, más pasos)" }),
+      h("p", { class: "muted small", text: "Crea una app gratuita en cada red (una sola vez) y Corta Clips publica sin intermediarios. Si una red está conectada así, se usa esta conexión en lugar de la rápida." }));
     for (const p of ["youtube", "tiktok", "instagram"]) {
       const info = st.social[p]; const setup = info.setup;
-      const box = h("div", { class: "box" + (info.connected ? " sel" : "") });
-      const acct = info.connected ? h("div", { class: "acct" }, info.account?.avatar ? h("img", { src: info.account.avatar, alt: "" }) : h("span", { class: "dot ok" }), h("b", { text: info.account?.name || "Conectado" })) : h("div", { class: "acct" }, h("span", { class: "dot " + (info.configured ? "warn" : "bad") }), info.configured ? "Listo para conectar" : "Falta configurar la app");
-      const connect = h("button", { class: "btn small " + (info.connected ? "" : "primary"), disabled: !info.configured, text: info.connected ? "Reconectar" : "Conectar", onclick: () => oauthConnect(p) });
+      const box = h("div", { class: "box" + (info.direct ? " sel" : "") });
+      const acct = info.direct ? h("div", { class: "acct" }, info.account?.avatar ? h("img", { src: info.account.avatar, alt: "" }) : h("span", { class: "dot ok" }), h("b", { text: info.account?.name || "Conectado" })) : h("div", { class: "acct" }, h("span", { class: "dot " + (info.configured ? "warn" : "bad") }), info.configured ? "Listo para conectar" : "Falta configurar la app");
+      const connect = h("button", { class: "btn small " + (info.direct ? "" : "primary"), disabled: !info.configured, text: info.direct ? "Reconectar" : "Conectar", onclick: () => oauthConnect(p) });
       const extra = [];
       if (p === "youtube") extra.push(sel("youtube_privacy", [["public", "Público"], ["unlisted", "Oculto"], ["private", "Privado"]], "Visibilidad", "Sin auditoría de Google los vídeos quedan privados."));
       if (p === "tiktok") extra.push(h("div", { class: "grid2" }, sel("tiktok_mode", [["draft", "Borrador (lo publicas desde la app)"], ["direct", "Publicación directa"]], "Modo"),
@@ -803,21 +840,16 @@ function paintDrawer() {
           h("button", { class: "btn small", text: "Completar", onclick: async () => { try { await api("/oauth/complete", { method: "POST", body: { url: paste.value } }); toast("Instagram conectado", "ok"); loadStatus(); } catch (e) { fail(e); } } }))));
       }
       box.append(
-        h("div", { class: "boxhead" }, h("h3", { text: info.label }), h("div", { class: "row" }, connect, info.connected ? h("button", { class: "btn small ghost danger", text: "Desconectar", onclick: async () => { await api(`/api/social/${p}/disconnect`, { method: "POST", body: {} }); loadStatus(); } }) : null)),
+        h("div", { class: "boxhead" }, h("h3", { text: info.label }), h("div", { class: "row" }, connect, info.direct ? h("button", { class: "btn small ghost danger", text: "Desconectar", onclick: async () => { await api(`/api/social/${p}/disconnect`, { method: "POST", body: {} }); loadStatus(); } }) : null)),
         acct, h("div", { style: "margin-top:12px" }, ...extra),
         h("details", { class: "more", open: !info.configured }, h("summary", { text: "Configurar la app de desarrollador" }),
           h("ol", { class: "steps" }, ...setup.steps.map(x => h("li", { text: x }))),
           h("div", { class: "small muted", style: "margin-top:10px", text: "URL de redirección para registrar:" }), copyField(setup.redirect_uri),
           h("div", { style: "margin-top:12px" }, ...setup.fields.map(f => credField(f, f.replaceAll("_", " "), f.includes("SECRET")))),
           h("div", { class: "row" }, h("button", { class: "btn small primary", text: "Guardar", onclick: e => saveCreds(e.target.closest(".box")) }), h("a", { class: "btn small", href: setup.console, target: "_blank", rel: "noopener", text: "Abrir consola ↗" }))));
-      out.push(box);
+      adv.append(box);
     }
-    const up = st.social.uploadpost;
-    const ub = h("div", { class: "box" }, h("div", { class: "boxhead" }, h("h3", { text: "Upload‑Post (alternativa)" }), h("span", { class: "small muted", text: up.configured ? "Configurado" : "Opcional" })),
-      h("div", { class: "small muted", text: "Servicio de pago que publica en las tres redes sin crear apps de desarrollador ni esperar auditorías." }),
-      h("div", { style: "margin-top:10px" }, credField("UPLOAD_POST_API_KEY", "API key", true), credField("UPLOAD_POST_USER", "Perfil (user)", false),
-        h("button", { class: "btn small primary", text: "Guardar", onclick: e => saveCreds(e.target.closest(".box")) })));
-    out.push(ub);
+    out.push(adv);
   } else if (currentTab === "sistema") {
     const item = (ok, label, hint) => [h("span", { text: ok ? "✅" : "⚠️" }), h("span", { text: label }), !ok && hint ? h("span", { class: "hint", text: hint }) : null];
     out.push(h("div", { class: "box" }, h("h3", { text: "Diagnóstico" }), h("div", { class: "diag", style: "margin-top:12px" },
@@ -840,7 +872,36 @@ function oauthConnect(platform) {
   if (!w) location.href = `/oauth/start/${platform}`;
   let n = 0; const t = setInterval(async () => { n++; await loadStatus(); if (S.status.social[platform].connected || n > 100) { clearInterval(t); if (S.status.social[platform].connected) toast(`${TARGET_LABEL[platform]} conectado ✓`, "ok"); } }, 3000);
 }
-window.addEventListener("message", e => { if (e.data?.cortaclips === "oauth") loadStatus(); });
+async function quickConnect(platform) {
+  const w = window.open("about:blank", "cortaclips-oauth", "width=560,height=760");
+  try {
+    const { url } = await api("/api/social/quick/connect", { method: "POST", body: { platform } });
+    if (w) w.location = url; else location.href = url;
+    let n = 0;
+    const t = setInterval(async () => {
+      n++;
+      await api("/api/social/quick/refresh", { method: "POST", body: {} }).catch(() => {});
+      await loadStatus();
+      const s = S.status.social[platform];
+      if ((s.quick && !s.reauth) || n > 60) { clearInterval(t); if (s.quick) toast(`${TARGET_LABEL[platform]} conectado ✓`, "ok"); }
+    }, 4000);
+  } catch (e) { if (w) w.close(); fail(e); }
+}
+window.addEventListener("message", e => {
+  if (e.origin !== location.origin || e.data?.cortaclips !== "oauth") return;
+  api("/api/social/quick/refresh", { method: "POST", body: {} }).catch(() => {}).finally(loadStatus);
+});
+(function returnFromConnect() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has("conectado")) return;
+  const ok = (q.get("connect_status") || "success") === "success";
+  if (window.opener && !window.opener.closed) {
+    try { window.opener.postMessage({ cortaclips: "oauth", ok }, location.origin); } catch (e) {}
+    window.close();
+  }
+  history.replaceState(null, "", "/");
+  setTimeout(() => toast(ok ? `${TARGET_LABEL[q.get("conectado")] || "Red"} conectado ✓` : "No se completó la conexión", ok ? "ok" : "bad", q.get("error_code") || ""), 600);
+})();
 
 loadStatus(); loadHistory();
 setInterval(() => { if (!document.hidden) loadStatus(); }, 30000);

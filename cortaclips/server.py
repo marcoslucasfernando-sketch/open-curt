@@ -268,7 +268,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(200, {"settings": config.update_settings(self.read_json())})
             elif path == "/api/credentials":
                 values = {k: v for k, v in self.read_json().items() if k in config.ENV_KEYS}
+                if "UPLOAD_POST_API_KEY" in values and values["UPLOAD_POST_API_KEY"] != config.env("UPLOAD_POST_API_KEY"):
+                    values.setdefault("UPLOAD_POST_USER", "")  # clave nueva: se detecta o crea el perfil de nuevo
                 config.save_env(values)
+                social.uploadpost.invalidate()
                 brain.invalidate_status()
                 transcribe.has_mlx.cache_clear()
                 self.send_json(200, {"credentials": config.credential_flags()})
@@ -289,6 +292,11 @@ class Handler(BaseHTTPRequestHandler):
                 query = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query))
                 platform_name = social.complete(query)
                 self.send_json(200, {"platform": platform_name})
+            elif path == "/api/social/quick/connect":
+                self.send_json(200, {"url": social.uploadpost.connect_url(str(self.read_json().get("platform", "")))})
+            elif path == "/api/social/quick/refresh":
+                social.uploadpost.invalidate()
+                self.send_json(200, {"social": social.status()})
             elif len(parts) == 4 and parts[:2] == ["api", "social"] and parts[3] == "disconnect":
                 social.disconnect(parts[2])
                 self.send_json(200, {"ok": True})

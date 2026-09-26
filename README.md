@@ -17,7 +17,7 @@ Todo se ejecuta en tu ordenador. Web pública (privacidad, términos y retorno O
 | 🎯 **Encuadre inteligente** | Detecta caras (OpenCV YuNet) y recorta a vertical siguiéndolas, sin temblores. Si no hay caras, usa el vídeo entero sobre un fondo difuminado. |
 | 🔤 **Subtítulos con estilo** | Karaoke, caja o limpio; 7 tipografías (Bricolage, Poppins, Anton, Montserrat, Unbounded, Bebas Neue, Archivo Black) y 5 colores. Además, archivo `.srt` de cada clip. |
 | 🔊 **Sonido de redes** | Volumen normalizado a −14 LUFS. |
-| ↗ **Publicación directa** | OAuth oficial con YouTube, TikTok (borrador o directo) e Instagram Reels. Alternativa: Upload‑Post. |
+| ↗ **Publicación en un clic** | Conecta YouTube, TikTok e Instagram iniciando sesión (conexión rápida), o con tus propias apps OAuth (avanzado). |
 | 🛠️ **Edición** | Ajusta inicio y fin (con «empezar/terminar aquí» desde el reproductor), edita títulos y textos, vuelve a renderizar o pide **otros momentos** sin volver a transcribir. |
 | 🧾 **Errores claros** | Cada fallo dice qué pasó y cómo arreglarlo, con registro técnico descargable y botón **Reintentar**, que reaprovecha lo ya descargado y transcrito. |
 
@@ -66,9 +66,23 @@ En **Automático** se usa lo primero que esté conectado, en este orden: API →
 
 ---
 
-## Conectar redes sociales (OAuth)
+## Conectar redes sociales
 
-Cada red exige crear **una vez** una «app de desarrollador» gratuita a tu nombre. En **Ajustes → Redes** tienes los pasos, la URL de redirección con botón de copiar y los campos para pegar las claves.
+### Conexión rápida (recomendada): inicias sesión y listo
+1. Crea una cuenta gratuita en [Upload‑Post](https://app.upload-post.com/) con «Continuar con Google».
+2. Ve a **API Keys**, crea una clave y pégala en **Ajustes → Redes**. Es lo único que se copia, y solo una vez.
+3. Pulsa **Conectar** en YouTube, TikTok e Instagram. Se abre el inicio de sesión oficial de cada red:
+   - **YouTube:** entras con tu cuenta de Google.
+   - **TikTok:** puedes usar «Continuar con Google».
+   - **Instagram:** Instagram no admite Google; entras con tu usuario de Instagram o con Facebook. La cuenta debe ser profesional (Creador o Empresa).
+
+Corta Clips crea tu perfil de Upload‑Post automáticamente y muestra qué cuentas están conectadas. Upload‑Post ya tiene sus apps aprobadas por las tres redes, así que los vídeos se publican en público sin auditorías.
+
+> Plan gratuito de Upload‑Post: 10 publicaciones al mes en YouTube e Instagram. Para publicar en TikTok necesitas un plan de pago.
+
+### Avanzado: conexión directa con tus propias apps (gratis, más pasos)
+
+Si prefieres no depender de un intermediario, crea **una vez** una app de desarrollador gratuita en cada red. En **Ajustes → Redes → Avanzado** tienes los pasos, la URL de redirección con botón de copiar y los campos para pegar las claves. Si una red está conectada de esta forma, se usa esta conexión en lugar de la rápida.
 
 Estas URLs sirven para rellenar las fichas de las apps:
 
@@ -79,7 +93,7 @@ Estas URLs sirven para rellenar las fichas de las apps:
 | Términos del servicio | `https://corta-clips.netlify.app/terminos` |
 | Eliminación de datos (Meta) | `https://corta-clips.netlify.app/eliminacion-datos` |
 
-### YouTube Shorts
+#### YouTube Shorts
 1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials): crea un proyecto y activa **YouTube Data API v3**.
 2. Configura la **pantalla de consentimiento OAuth** (tipo Externo), añade tu cuenta como usuario de prueba y pásala a **«En producción»**. Si la dejas en «Prueba», el acceso caduca cada 7 días.
 3. **Crear credenciales → ID de cliente OAuth → «App de escritorio»**. Pega el ID y el secreto en la app.
@@ -87,7 +101,7 @@ Estas URLs sirven para rellenar las fichas de las apps:
 
 > ⚠️ Google deja como **privados** los vídeos subidos por API desde proyectos sin auditar. Puedes hacerlos públicos a mano en YouTube Studio o solicitar la [auditoría](https://support.google.com/youtube/contact/yt_api_form).
 
-### TikTok
+#### TikTok
 1. [developers.tiktok.com](https://developers.tiktok.com/apps): crea una app y añade **Login Kit** y **Content Posting API**.
 2. En Login Kit elige la plataforma **Desktop** y registra `http://127.0.0.1:8766/oauth/callback`.
 3. Pide los permisos `user.info.basic`, `video.upload` y `video.publish`. Pega el Client Key y el Client Secret en la app.
@@ -95,15 +109,12 @@ Estas URLs sirven para rellenar las fichas de las apps:
    - **Borrador** (recomendado mientras la app no esté auditada): el vídeo llega a tu bandeja de TikTok y lo publicas desde el móvil, donde además puedes añadir música.
    - **Directo**: sin auditoría, TikTok solo permite «Solo yo».
 
-### Instagram Reels
+#### Instagram Reels
 1. Tu cuenta de Instagram debe ser **profesional** (Creador o Empresa).
 2. [developers.facebook.com](https://developers.facebook.com/apps/): crea una app de tipo Empresa y añade **Instagram → API con inicio de sesión de Instagram**.
 3. En «Configurar inicio de sesión para empresas» añade la redirección **`https://corta-clips.netlify.app/oauth/callback`**. Instagram exige HTTPS, así que esa página reenvía el código a tu ordenador (`127.0.0.1`) sin guardar nada.
 4. En **Roles → Probadores de Instagram** añade tu cuenta y acepta la invitación en Instagram (Ajustes → Apps y sitios web).
 5. Pega el **ID y la clave secreta de la app de Instagram** (no los de Facebook) y pulsa **Conectar**. Si no vuelve sola a la app, pega la URL final en «¿No volvió solo?».
-
-### Alternativa sin apps de desarrollador: Upload‑Post
-Servicio de pago que publica en las tres redes sin auditorías. Pega la API key y el perfil en Ajustes → Redes.
 
 ---
 

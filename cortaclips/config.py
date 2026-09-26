@@ -75,8 +75,9 @@ def load_env(path: Path = ENV_FILE) -> None:
             os.environ.setdefault(*parsed)
 
 
-def save_env(updates: dict[str, str], path: Path = ENV_FILE) -> None:
+def save_env(updates: dict[str, str], path: Path | None = None) -> None:
     """Escribe claves permitidas en .env conservando el resto del archivo."""
+    path = path or ENV_FILE
     clean = {}
     for name, value in updates.items():
         if name not in ENV_KEYS:
