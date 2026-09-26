@@ -51,6 +51,11 @@ def _write_tokens(data: dict) -> None:
     tmp.replace(config.TOKENS_FILE)
 
 
+def all_tokens() -> dict:
+    with _lock:
+        return _read_tokens()
+
+
 def get_token(platform: str) -> dict | None:
     with _lock:
         return _read_tokens().get(platform)

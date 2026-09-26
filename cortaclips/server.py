@@ -56,7 +56,6 @@ def system_status() -> dict:
         "settings": settings,
         "credentials": config.credential_flags(),
         "fonts": [{"id": key, "label": value["label"], "file": value["file"]} for key, value in captions.FONTS.items()],
-        "https_redirect": config.https_redirect(),
     }
 
 
@@ -242,9 +241,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def oauth_finish(self, query: dict) -> None:
         try:
-            platform_name = social.complete(query)
-            label = social.PLATFORMS[platform_name].LABEL
-            self.send_html(200, OAUTH_PAGE.format(title=f"{label} conectado ✓", body="Ya puedes cerrar esta pestaña y volver a Corta Clips.", ok="true", close=1500))
+            account = social.complete(query)
+            name = html.escape(account.get("name") or "Tu canal")
+            self.send_html(200, OAUTH_PAGE.format(title="Canal conectado ✓", body=f"<b>{name}</b> ya está listo para recibir clips. Puedes cerrar esta pestaña.", ok="true", close=2500))
         except (SocialError, UserError) as exc:
             self.send_html(400, OAUTH_PAGE.format(title="No se pudo conectar", body=html.escape(f"{exc.message} {exc.hint}"), ok="false", close=600000))
 
@@ -267,11 +266,14 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/settings":
                 self.send_json(200, {"settings": config.update_settings(self.read_json())})
             elif path == "/api/credentials":
-                values = {k: v for k, v in self.read_json().items() if k in config.ENV_KEYS}
-                if "UPLOAD_POST_API_KEY" in values and values["UPLOAD_POST_API_KEY"] != config.env("UPLOAD_POST_API_KEY"):
-                    values.setdefault("UPLOAD_POST_USER", "")  # clave nueva: se detecta o crea el perfil de nuevo
+                values = {k: str(v).strip() for k, v in self.read_json().items() if k in config.ENV_KEYS}
+                client_id = values.get("YOUTUBE_CLIENT_ID")
+                if client_id and not social.youtube.valid_client_id(client_id):
+                    raise UserError("Ese ID de cliente no parece de Google.",
+                                    "Debe terminar en .apps.googleusercontent.com. Cópialo de Google Cloud → Clientes.")
+                if client_id and client_id != config.env("YOUTUBE_CLIENT_ID") and config.env("YOUTUBE_CLIENT_ID"):
+                    social.disconnect()  # cliente nuevo: la sesión anterior ya no sirve
                 config.save_env(values)
-                social.uploadpost.invalidate()
                 brain.invalidate_status()
                 transcribe.has_mlx.cache_clear()
                 self.send_json(200, {"credentials": config.credential_flags()})
@@ -286,20 +288,9 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/ai/refresh":
                 brain.invalidate_status()
                 self.send_json(200, {"ai": brain.providers_status()})
-            elif path == "/oauth/complete":
-                # Plan B: pegar la URL de retorno si la redirección automática no funcionó.
-                url = str(self.read_json().get("url", ""))
-                query = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query))
-                platform_name = social.complete(query)
-                self.send_json(200, {"platform": platform_name})
-            elif path == "/api/social/quick/connect":
-                self.send_json(200, {"url": social.uploadpost.connect_url(str(self.read_json().get("platform", "")))})
-            elif path == "/api/social/quick/refresh":
-                social.uploadpost.invalidate()
+            elif len(parts) == 5 and parts[:3] == ["api", "youtube", "channels"] and parts[4] in ("disconnect", "default"):
+                (social.disconnect if parts[4] == "disconnect" else social.set_default)(parts[3])
                 self.send_json(200, {"social": social.status()})
-            elif len(parts) == 4 and parts[:2] == ["api", "social"] and parts[3] == "disconnect":
-                social.disconnect(parts[2])
-                self.send_json(200, {"ok": True})
             elif len(parts) >= 4 and parts[:2] == ["api", "jobs"]:
                 self.job_action(parts[2], parts[3:])
             else:
@@ -388,11 +379,9 @@ class Handler(BaseHTTPRequestHandler):
                     fields["dirty"] = True
                 self.send_json(200, MANAGER.update_clip(job_id, number, **fields))
             elif rest[2] == "publish":
-                PUBLISHER.publish(job_id, number, list(body.get("targets", [])), {k: v for k, v in body.get("options", {}).items() if k in config.DEFAULT_SETTINGS})
+                options = config.validate_settings({k: v for k, v in (body.get("options") or {}).items() if k == "youtube_privacy"})
+                PUBLISHER.publish(job_id, number, str(body.get("channel", "")), options)
                 self.send_json(202, MANAGER.get(job_id))
-            elif rest[2] == "publication-status":
-                PUBLISHER.refresh_status(job_id, number, str(body.get("target", "")))
-                self.send_json(200, MANAGER.get(job_id))
             else:
                 self.send_json(404, {"error": "Acción desconocida."})
         else:

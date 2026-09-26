@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 import urllib.parse
 from pathlib import Path
@@ -27,22 +28,40 @@ def redirect_uri() -> str:
 
 def setup() -> dict:
     return {
-        "console": "https://console.cloud.google.com/apis/credentials",
+        "console": "https://console.cloud.google.com/auth/clients",
         "redirect_uri": redirect_uri(),
         "fields": ["YOUTUBE_CLIENT_ID", "YOUTUBE_CLIENT_SECRET"],
         "steps": [
-            "Crea un proyecto en Google Cloud Console y activa «YouTube Data API v3».",
-            "Pantalla de consentimiento OAuth: tipo Externo, añade tu cuenta como usuario de prueba y publícala («En producción») para que el acceso no caduque a los 7 días.",
-            "Credenciales → Crear ID de cliente OAuth → tipo «App de escritorio». Copia el ID y el secreto aquí.",
-            "Mientras Google no audite tu proyecto, YouTube deja los vídeos subidos por API como privados.",
+            {"text": "Crea un proyecto en Google Cloud (por ejemplo «Corta Clips»).",
+             "url": "https://console.cloud.google.com/projectcreate", "link": "Crear proyecto"},
+            {"text": "Activa «YouTube Data API v3» en ese proyecto.",
+             "url": "https://console.cloud.google.com/apis/library/youtube.googleapis.com", "link": "Activar API"},
+            {"text": "Configura la pantalla de acceso: nombre «Corta Clips», tu correo y tipo de usuarios «Externo».",
+             "url": "https://console.cloud.google.com/auth/branding", "link": "Pantalla de acceso"},
+            {"text": "En «Público» añade tu Gmail como usuario de prueba y pulsa «Publicar aplicación» (así el acceso no caduca a los 7 días).",
+             "url": "https://console.cloud.google.com/auth/audience", "link": "Público"},
+            {"text": "Crea un cliente de tipo «Aplicación de escritorio» y copia aquí su ID de cliente y su secreto.",
+             "url": "https://console.cloud.google.com/auth/clients/create", "link": "Crear cliente"},
         ],
+        "notes": [
+            "Al iniciar sesión, Google avisará de que la app no está verificada: pulsa «Configuración avanzada» → «Ir a Corta Clips». Es tu propia app.",
+            "¿Varios canales en la misma cuenta? Pulsa «Añadir otro canal» una vez por canal y, cuando Google pregunte, elige el canal correspondiente.",
+            "Mientras Google no audite tu proyecto, YouTube deja los vídeos subidos por la API como privados. La auditoría es gratuita.",
+        ],
+        "audit": "https://support.google.com/youtube/contact/yt_api_form",
     }
+
+
+def valid_client_id(value: str) -> bool:
+    return bool(re.fullmatch(r"[0-9]+-[0-9a-z]+\.apps\.googleusercontent\.com", (value or "").strip()))
 
 
 def auth_url(state: str, challenge: str) -> str:
     return AUTH_URL + "?" + urllib.parse.urlencode({
         "client_id": config.env("YOUTUBE_CLIENT_ID"), "redirect_uri": redirect_uri(), "response_type": "code",
-        "scope": SCOPES, "access_type": "offline", "prompt": "consent", "include_granted_scopes": "true",
+        "scope": SCOPES, "access_type": "offline", "include_granted_scopes": "true",
+        # select_account: Google siempre deja elegir cuenta y canal (necesario para añadir un segundo canal).
+        "prompt": "consent select_account",
         "state": state, "code_challenge": challenge, "code_challenge_method": "S256",
     })
 
@@ -91,14 +110,30 @@ def account(token: dict) -> dict:
     return {"id": items[0]["id"], "name": snippet.get("title", ""), "avatar": ((snippet.get("thumbnails") or {}).get("default") or {}).get("url", "")}
 
 
+def clean_text(text: str) -> str:
+    """YouTube rechaza «<» y «>» en títulos y descripciones."""
+    return (text or "").replace("<", "‹").replace(">", "›").strip()
+
+
+def fit_tags(tags: list[str], limit: int = 450) -> list[str]:
+    """Las etiquetas no pueden sumar más de 500 caracteres."""
+    out, total = [], 0
+    for tag in tags:
+        tag = clean_text(tag)[:30]
+        if tag and total + len(tag) + 1 <= limit:
+            out.append(tag)
+            total += len(tag) + 1
+    return out
+
+
 def publish(token: dict, video: Path, clip: dict, options: dict, progress) -> dict:
-    title = clip.get("title") or "Clip"
-    tags = [t for t in clip.get("hashtags", []) if t][:12]
-    description = (clip.get("caption") or "").strip()
+    title = clean_text(" ".join((clip.get("title") or "Clip").split()))[:100] or "Clip"
+    tags = fit_tags([t for t in clip.get("hashtags", []) if t][:15])
+    description = clean_text(clip.get("caption") or "")
     description += "\n\n" + " ".join("#" + t for t in tags + ["Shorts"])
     privacy = options.get("youtube_privacy", "public")
     metadata = {
-        "snippet": {"title": title[:100], "description": description[:4900], "tags": tags, "categoryId": "22"},
+        "snippet": {"title": title, "description": description[:4900], "tags": tags, "categoryId": "22"},
         "status": {"privacyStatus": privacy, "selfDeclaredMadeForKids": False, "containsSyntheticMedia": False},
     }
     size = video.stat().st_size

@@ -1,4 +1,4 @@
-"""Pruebas de OAuth y publicación con las APIs simuladas (sin red)."""
+"""Pruebas de YouTube: OAuth con ID de cliente y secreto, varios canales y subida (APIs simuladas, sin red)."""
 
 import base64
 import hashlib
@@ -11,16 +11,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 from cortaclips import config, social
-from cortaclips.social import instagram, oauth, tiktok, uploadpost, youtube
+from cortaclips.social import oauth, youtube
 from cortaclips.social.oauth import SocialError
 
-ENV = {
-    "YOUTUBE_CLIENT_ID": "yt-id", "YOUTUBE_CLIENT_SECRET": "yt-secret",
-    "TIKTOK_CLIENT_KEY": "tt-key", "TIKTOK_CLIENT_SECRET": "tt-secret",
-    "INSTAGRAM_APP_ID": "ig-id", "INSTAGRAM_APP_SECRET": "ig-secret",
-    "OAUTH_HTTPS_REDIRECT": "https://ejemplo.netlify.app/oauth/callback",
-}
-CLIP = {"number": 1, "start": 10.0, "end": 40.0, "title": "Un título", "caption": "Una descripción", "hashtags": ["uno", "dos"]}
+ENV = {"YOUTUBE_CLIENT_ID": "123456-abc.apps.googleusercontent.com", "YOUTUBE_CLIENT_SECRET": "yt-secret"}
+CLIP = {"number": 1, "start": 10.0, "end": 40.0, "title": "Un <gran> título", "caption": "Una descripción", "hashtags": ["uno", "dos"]}
 
 
 class FakeHttp:
@@ -37,6 +32,14 @@ class FakeHttp:
         return self.responses.pop(0)
 
 
+def channel_login(channel_id: str, name: str):
+    """Respuestas de Google para un inicio de sesión que elige el canal indicado."""
+    return [
+        (200, {"access_token": f"at-{channel_id}", "refresh_token": f"rt-{channel_id}", "expires_in": 3600}, {}),
+        (200, {"items": [{"id": channel_id, "snippet": {"title": name, "thumbnails": {"default": {"url": f"http://img/{channel_id}"}}}}]}, {}),
+    ]
+
+
 class TempData(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -44,6 +47,7 @@ class TempData(unittest.TestCase):
         self.patches = [
             patch.object(config, "DATA", data),
             patch.object(config, "TOKENS_FILE", data / "tokens.json"),
+            patch.object(config, "SETTINGS_FILE", data / "settings.json"),
             patch.dict(os.environ, ENV),
         ]
         for p in self.patches:
@@ -56,68 +60,96 @@ class TempData(unittest.TestCase):
             p.stop()
         self.temp.cleanup()
 
+    def login(self, channel_id: str, name: str) -> dict:
+        fake = FakeHttp(channel_login(channel_id, name))
+        with patch("cortaclips.social.youtube.http", fake):
+            state = oauth.new_state("youtube", "verif", youtube.redirect_uri())
+            account = social.complete({"state": state, "code": "c0de"})
+        self.assertEqual(fake.calls[0][2]["form"]["code_verifier"], "verif")
+        return account
 
-class PkceStateTests(TempData):
-    def test_pkce_formats(self):
+
+class OAuthTests(TempData):
+    def test_pkce_is_base64url_sha256(self):
         verifier, challenge = oauth.pkce_pair()
         digest = hashlib.sha256(verifier.encode()).digest()
         self.assertEqual(challenge, base64.urlsafe_b64encode(digest).rstrip(b"=").decode())
-        verifier, challenge = oauth.pkce_pair(hex_challenge=True)
-        self.assertEqual(challenge, hashlib.sha256(verifier.encode()).hexdigest())
         self.assertTrue(43 <= len(verifier) <= 128)
 
-    def test_state_is_single_use_and_carries_port(self):
-        state = oauth.new_state("tiktok", "v", "http://127.0.0.1:8766/oauth/callback")
-        self.assertTrue(state.startswith(f"{config.port()}.tiktok."))
-        self.assertEqual(oauth.pop_state(state)["platform"], "tiktok")
+    def test_auth_url_lets_you_pick_account_and_channel(self):
+        query = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(social.start("youtube")).query))
+        self.assertEqual(query["client_id"], ENV["YOUTUBE_CLIENT_ID"])
+        self.assertEqual(query["access_type"], "offline")
+        self.assertIn("select_account", query["prompt"])
+        self.assertIn("youtube.upload", query["scope"])
+        self.assertEqual(query["redirect_uri"], f"http://127.0.0.1:{config.port()}/oauth/callback")
+
+    def test_state_is_single_use_and_forgeries_fail(self):
+        state = oauth.new_state("youtube", "v", youtube.redirect_uri())
+        self.assertEqual(oauth.pop_state(state)["platform"], "youtube")
         with self.assertRaises(SocialError):
             oauth.pop_state(state)
-
-    def test_forged_state_rejected(self):
         with self.assertRaises(SocialError):
             social.complete({"state": "8766.youtube.inventado", "code": "x"})
 
-    def test_auth_urls(self):
-        url = social.start("tiktok")
-        query = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query))
-        self.assertEqual(query["client_key"], "tt-key")
-        self.assertEqual(query["code_challenge_method"], "S256")
-        self.assertEqual(len(query["code_challenge"]), 64)  # hexadecimal
-        self.assertEqual(query["redirect_uri"], f"http://127.0.0.1:{config.port()}/oauth/callback")
-        url = social.start("instagram")
-        query = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query))
-        self.assertEqual(query["redirect_uri"], ENV["OAUTH_HTTPS_REDIRECT"])
-        self.assertIn("instagram_business_content_publish", query["scope"])
-        url = social.start("youtube")
-        query = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query))
-        self.assertEqual(query["access_type"], "offline")
-        self.assertIn("youtube.upload", query["scope"])
-
-    def test_start_requires_configuration(self):
-        with patch.dict(os.environ, {"TIKTOK_CLIENT_KEY": ""}):
+    def test_needs_client_id_and_secret(self):
+        with patch.dict(os.environ, {"YOUTUBE_CLIENT_SECRET": ""}):
             with self.assertRaises(SocialError):
-                social.start("tiktok")
+                social.start("youtube")
+
+    def test_client_id_format(self):
+        self.assertTrue(youtube.valid_client_id(ENV["YOUTUBE_CLIENT_ID"]))
+        self.assertFalse(youtube.valid_client_id("mi-clave"))
+
+    def test_cancel_is_explained(self):
+        state = oauth.new_state("youtube", "v", youtube.redirect_uri())
+        with self.assertRaises(SocialError) as caught:
+            social.complete({"state": state, "error": "access_denied"})
+        self.assertIn("cancelado", caught.exception.message)
 
 
-class YoutubeTests(TempData):
-    def test_full_oauth_and_upload(self):
-        fake = FakeHttp([
-            (200, {"access_token": "at", "refresh_token": "rt", "expires_in": 3600}, {}),
-            (200, {"items": [{"id": "UC1", "snippet": {"title": "Mi canal", "thumbnails": {"default": {"url": "http://a"}}}}]}, {}),
-            (200, {}, {"Location": "https://upload.example/session"}),
-            (200, {"id": "vid123", "status": {"privacyStatus": "public"}}, {}),
-        ])
+class ChannelTests(TempData):
+    def test_two_channels_same_account(self):
+        self.assertEqual(self.login("UC_personal", "Marcos")["name"], "Marcos")
+        self.login("UC_marca", "Mi Podcast")
+        status = social.status()["youtube"]
+        self.assertTrue(status["connected"])
+        self.assertEqual({c["name"] for c in status["channels"]}, {"Marcos", "Mi Podcast"})
+        self.assertEqual(status["default"], "UC_personal")  # el primero conectado queda por defecto
+        social.set_default("UC_marca")
+        self.assertEqual(social.default_channel(), "UC_marca")
+        social.disconnect("UC_marca")
+        self.assertEqual([c["id"] for c in social.channels()], ["UC_personal"])
+        self.assertEqual(social.default_channel(), "UC_personal")
+
+    def test_reconnecting_same_channel_does_not_duplicate(self):
+        self.login("UC_1", "Canal")
+        self.login("UC_1", "Canal renombrado")
+        self.assertEqual([(c["id"], c["name"]) for c in social.channels()], [("UC_1", "Canal renombrado")])
+
+    def test_old_single_channel_token_is_migrated(self):
+        oauth.set_token("youtube", {"access_token": "a", "expires_at": time.time() + 3600, "account": {"id": "UC_viejo", "name": "Antiguo"}})
+        self.assertEqual([c["id"] for c in social.channels()], ["UC_viejo"])
+        self.assertIsNone(oauth.get_token("youtube"))
+
+    def test_expired_token_is_refreshed_per_channel(self):
+        oauth.set_token("youtube:UC_1", {"access_token": "viejo", "refresh_token": "rt", "expires_at": time.time() - 10, "account": {"id": "UC_1"}})
+        fake = FakeHttp([(200, {"access_token": "nuevo", "expires_in": 3600}, {})])
+        with patch("cortaclips.social.youtube.http", fake):
+            self.assertEqual(social.valid_token("UC_1")["access_token"], "nuevo")
+        self.assertEqual(oauth.get_token("youtube:UC_1")["access_token"], "nuevo")
+
+
+class UploadTests(TempData):
+    def test_resumable_upload_with_clean_metadata(self):
+        fake = FakeHttp([(200, {}, {"Location": "https://upload.example/session"}), (200, {"id": "vid123", "status": {"privacyStatus": "unlisted"}}, {})])
         with patch("cortaclips.social.youtube.http", fake), patch("cortaclips.social.oauth.http", fake):
-            state = oauth.new_state("youtube", "verif", youtube.redirect_uri())
-            self.assertEqual(social.complete({"state": state, "code": "c0de"}), "youtube")
-            token = oauth.get_token("youtube")
-            self.assertEqual(token["account"]["name"], "Mi canal")
-            result = youtube.publish(token, self.video, CLIP, {"youtube_privacy": "public"}, lambda *_: None)
+            result = youtube.publish({"access_token": "a"}, self.video, CLIP, {"youtube_privacy": "unlisted"}, lambda *_: None)
         self.assertEqual(result["url"], "https://youtube.com/shorts/vid123")
-        self.assertEqual(fake.calls[0][2]["form"]["code_verifier"], "verif")
-        metadata = fake.calls[2][2]["json_body"]
+        metadata = fake.calls[0][2]["json_body"]
+        self.assertNotIn("<", metadata["snippet"]["title"])
         self.assertIn("#Shorts", metadata["snippet"]["description"])
-        self.assertEqual(metadata["status"]["privacyStatus"], "public")
+        self.assertEqual(metadata["status"]["privacyStatus"], "unlisted")
 
     def test_unverified_project_reports_private(self):
         fake = FakeHttp([(200, {}, {"Location": "https://u"}), (200, {"id": "v", "status": {"privacyStatus": "private"}}, {})])
@@ -126,184 +158,41 @@ class YoutubeTests(TempData):
         self.assertEqual(result["status"], "private")
         self.assertIn("auditado", result["message"])
 
-
-class TiktokTests(TempData):
-    def test_chunk_plan(self):
-        mb = 1024 * 1024
-        self.assertEqual(tiktok.chunk_plan(3 * mb), (3 * mb, 1))
-        self.assertEqual(tiktok.chunk_plan(40 * mb), (40 * mb, 1))
-        size, count = tiktok.chunk_plan(95 * mb)
-        self.assertEqual((size, count), (10 * mb, 9))
-        self.assertLessEqual(95 * mb - size * (count - 1), 128 * mb)
-
-    def test_draft_upload_flow(self):
-        fake = FakeHttp([
-            (200, {"data": {"publish_id": "p1", "upload_url": "https://up.tiktok/x"}, "error": {"code": "ok"}}, {}),
-            (201, {}, {}),
-            (200, {"data": {"status": "SEND_TO_USER_INBOX"}, "error": {"code": "ok"}}, {}),
-        ])
-        with patch("cortaclips.social.tiktok.http", fake), patch("cortaclips.social.oauth.http", fake):
-            result = tiktok.publish({"access_token": "a"}, self.video, CLIP, {"tiktok_mode": "draft"}, lambda *_: None)
-        self.assertEqual(result["status"], "draft")
-        self.assertTrue(fake.calls[0][1].endswith("/v2/post/publish/inbox/video/init/"))
-        self.assertEqual(fake.calls[1][2]["headers"]["Content-Range"], "bytes 0-2047/2048")
-
-    def test_direct_post_falls_back_to_allowed_privacy(self):
-        fake = FakeHttp([
-            (200, {"data": {"privacy_level_options": ["SELF_ONLY"], "max_video_post_duration_sec": 600}, "error": {"code": "ok"}}, {}),
-            (200, {"data": {"publish_id": "p1", "upload_url": "https://up"}, "error": {"code": "ok"}}, {}),
-            (201, {}, {}),
-            (200, {"data": {"status": "PUBLISH_COMPLETE", "publicaly_available_post_id": [777]}, "error": {"code": "ok"}}, {}),
-        ])
-        with patch("cortaclips.social.tiktok.http", fake), patch("cortaclips.social.oauth.http", fake):
-            result = tiktok.publish({"access_token": "a"}, self.video, CLIP, {"tiktok_mode": "direct", "tiktok_privacy": "PUBLIC_TO_EVERYONE"}, lambda *_: None)
-        self.assertEqual(fake.calls[1][2]["json_body"]["post_info"]["privacy_level"], "SELF_ONLY")
-        self.assertIn("#uno", fake.calls[1][2]["json_body"]["post_info"]["title"])
-        self.assertEqual(result["url"], "https://www.tiktok.com/video/777")
-
-    def test_unaudited_error_has_hint(self):
-        fake = FakeHttp([(403, {"error": {"code": "unaudited_client_can_only_post_to_private_accounts", "message": "x"}}, {})])
-        with patch("cortaclips.social.tiktok.http", fake), patch("cortaclips.social.oauth.http", fake):
-            with self.assertRaises(SocialError) as caught:
-                tiktok.publish({"access_token": "a"}, self.video, CLIP, {"tiktok_mode": "draft"}, lambda *_: None)
-        self.assertIn("Solo yo", caught.exception.hint)
-
-
-class InstagramTests(TempData):
-    def test_login_and_reel_publish(self):
-        fake = FakeHttp([
-            (200, {"data": [{"access_token": "short", "user_id": "17841", "permissions": "x"}]}, {}),
-            (200, {"access_token": "long", "expires_in": 5184000}, {}),
-            (200, {"user_id": "17841", "username": "micuenta"}, {}),
-            (200, {"id": "container1"}, {}),
-            (200, {"success": True}, {}),
-            (200, {"status_code": "FINISHED"}, {}),
-            (200, {"id": "media9"}, {}),
-            (200, {"permalink": "https://instagram.com/reel/abc"}, {}),
-        ])
-        with patch("cortaclips.social.instagram.http", fake), patch("cortaclips.social.oauth.http", fake):
-            state = oauth.new_state("instagram", "unused", instagram.redirect_uri())
-            social.complete({"state": state, "code": "abc#_"})
-            token = oauth.get_token("instagram")
-            self.assertEqual(token["access_token"], "long")
-            result = instagram.publish(token, self.video, CLIP, {}, lambda *_: None)
-        self.assertEqual(fake.calls[0][2]["form"]["code"], "abc")
-        self.assertEqual(fake.calls[3][2]["form"]["media_type"], "REELS")
-        upload = fake.calls[4]
-        self.assertTrue(upload[1].startswith("https://rupload.facebook.com/ig-api-upload/"))
-        self.assertEqual(upload[2]["headers"]["file_size"], "2048")
-        self.assertEqual(result["url"], "https://instagram.com/reel/abc")
-
-    def test_refresh_only_after_a_day(self):
-        token = {"access_token": "a", "obtained_at": time.time(), "expires_at": time.time() + 100}
-        self.assertIs(instagram.refresh(token), token)
-
-
-class QuickConnectTests(TempData):
-    def setUp(self):
-        super().setUp()
-        self.env_file = Path(self.temp.name) / ".env"
-        self.extra = [patch.object(config, "ENV_FILE", self.env_file), patch.dict(os.environ, {"UPLOAD_POST_API_KEY": "up-key", "UPLOAD_POST_USER": ""})]
-        for p in self.extra:
-            p.start()
-        uploadpost.invalidate()
-
-    def tearDown(self):
-        for p in reversed(self.extra):
-            p.stop()
-        uploadpost.invalidate()
-        super().tearDown()
-
-    def test_profile_is_created_and_saved(self):
-        fake = FakeHttp([(200, {"profiles": []}, {}), (201, {"success": True, "profile": {"username": "cortaclips"}}, {})])
-        with patch("cortaclips.social.uploadpost.http", fake):
-            self.assertEqual(uploadpost.ensure_profile(), "cortaclips")
-        self.assertEqual(fake.calls[1][2]["json_body"], {"username": "cortaclips"})
-        self.assertEqual(os.environ["UPLOAD_POST_USER"], "cortaclips")
-        self.assertIn("UPLOAD_POST_USER=cortaclips", self.env_file.read_text(encoding="utf-8"))
-
-    def test_existing_profile_is_reused(self):
-        fake = FakeHttp([(200, {"profiles": [{"username": "mio"}]}, {})])
-        with patch("cortaclips.social.uploadpost.http", fake):
-            self.assertEqual(uploadpost.ensure_profile(), "mio")
-
-    def test_accounts_and_connect_url(self):
-        os.environ["UPLOAD_POST_USER"] = "mio"
-        profile = {"profile": {"social_accounts": {"youtube": {"display_name": "Mi canal", "social_images": "http://img"}, "tiktok": "", "instagram": None}}}
-        fake = FakeHttp([(200, profile, {}), (200, {"success": True, "authorize_url": "https://accounts.google.com/o/oauth2/auth?x=1"}, {})])
-        with patch("cortaclips.social.uploadpost.http", fake):
-            self.assertEqual(uploadpost.accounts(), {"youtube": {"name": "Mi canal", "avatar": "http://img", "reauth": False}})
-            url = uploadpost.connect_url("tiktok")
-        self.assertTrue(url.startswith("https://accounts.google.com"))
-        method, endpoint, kwargs = fake.calls[1]
-        self.assertTrue(endpoint.endswith("/api/uploadposts/oauth/tiktok/start"))
-        self.assertEqual(kwargs["json_body"]["profile"], "mio")
-        self.assertIn("/?conectado=tiktok", kwargs["json_body"]["redirect_url"])
-        self.assertEqual(kwargs["headers"]["Authorization"], "Apikey up-key")
-
-    def test_status_combines_direct_and_quick(self):
-        oauth.set_token("youtube", {"access_token": "a", "expires_at": time.time() + 3600, "account": {"name": "Directo"}})
-        with patch.object(uploadpost, "accounts", return_value={"youtube": {"name": "Rápido"}, "tiktok": {"name": "tt", "reauth": True}}):
-            status = social.status()
-        self.assertEqual((status["youtube"]["via"], status["youtube"]["account"]["name"]), ("direct", "Directo"))
-        self.assertEqual(status["tiktok"]["via"], "quick")
-        self.assertTrue(status["tiktok"]["reauth"])
-        self.assertFalse(status["instagram"]["connected"])
-        self.assertTrue(status["quick"]["configured"])
+    def test_tags_fit_youtube_limit(self):
+        tags = youtube.fit_tags(["x" * 40] * 30)
+        self.assertLessEqual(sum(len(t) + 1 for t in tags), 450)
+        self.assertTrue(all(len(t) <= 30 for t in tags))
 
 
 class PublisherTests(TempData):
-    def test_publish_records_result_on_clip(self):
+    def test_upload_goes_to_the_chosen_channel(self):
         from cortaclips.pipeline import JobManager
 
         manager = JobManager(Path(self.temp.name) / "outputs")
-        job, target = manager.create_upload("demo.mp4", {})
-        target.write_bytes(b"x")
-        (target.parent / "clip_01.mp4").write_bytes(b"\x00" * 10)
+        job, source = manager.create_upload("demo.mp4", {})
+        (source.parent / "clip_01.mp4").write_bytes(b"\x00" * 10)
         manager._update(job["id"], status="done", clips=[{**CLIP, "file": "clip_01.mp4", "status": "ready", "publications": {}}])
-        oauth.set_token("youtube", {"access_token": "a", "expires_at": time.time() + 3600})
-        publisher = social.Publisher(manager)
-        with patch.object(youtube, "publish", return_value={"status": "published", "id": "v", "url": "https://youtube.com/shorts/v", "message": "ok"}):
-            publisher.publish(job["id"], 1, ["youtube"], {})
-            for _ in range(50):
-                record = manager.get(job["id"])["clips"][0]["publications"]["youtube"]
-                if record["status"] != "uploading":
-                    break
-                time.sleep(0.05)
-        self.assertEqual(record["status"], "published")
-        self.assertEqual(record["url"], "https://youtube.com/shorts/v")
-        with self.assertRaises(SocialError):
-            publisher.publish(job["id"], 1, ["tiktok"], {})  # no conectado
+        for channel, name in (("UC_a", "Canal A"), ("UC_b", "Canal B")):
+            oauth.set_token(f"youtube:{channel}", {"access_token": f"tok-{channel}", "expires_at": time.time() + 3600, "account": {"id": channel, "name": name}})
+        used = []
 
-    def test_routes_direct_and_groups_quick_platforms(self):
-        from cortaclips.pipeline import JobManager
-
-        manager = JobManager(Path(self.temp.name) / "outputs2")
-        job, target = manager.create_upload("demo.mp4", {})
-        (target.parent / "clip_01.mp4").write_bytes(b"\x00" * 10)
-        manager._update(job["id"], status="done", clips=[{**CLIP, "file": "clip_01.mp4", "status": "ready", "publications": {}}])
-        oauth.set_token("youtube", {"access_token": "a", "expires_at": time.time() + 3600})
-        quick_calls = []
-
-        def fake_quick(video, clip, job_id, progress, platforms):
-            quick_calls.append(list(platforms))
-            return {"status": "processing", "id": "req-1", "url": "", "message": "Enviado"}
+        def fake_publish(token, video, clip, options, progress):
+            used.append((token["access_token"], options["youtube_privacy"]))
+            return {"status": "published", "id": "v1", "url": "https://youtube.com/shorts/v1", "message": "ok"}
 
         publisher = social.Publisher(manager)
-        with patch.object(uploadpost, "accounts", return_value={"tiktok": {"name": "tt"}, "instagram": {"name": "ig"}}), \
-             patch.object(uploadpost, "publish", side_effect=fake_quick), \
-             patch.object(youtube, "publish", return_value={"status": "published", "id": "v", "url": "u", "message": "ok"}):
-            publisher.publish(job["id"], 1, ["youtube", "tiktok", "instagram"], {})
+        with patch.object(youtube, "publish", side_effect=fake_publish):
+            publisher.publish(job["id"], 1, "UC_b", {"youtube_privacy": "unlisted"})
             for _ in range(60):
-                pubs = manager.get(job["id"])["clips"][0]["publications"]
-                if all(p["status"] != "uploading" for p in pubs.values()):
+                record = manager.get(job["id"])["clips"][0]["publications"].get("youtube:UC_b", {})
+                if record.get("status") not in (None, "uploading"):
                     break
                 time.sleep(0.05)
-        self.assertEqual(quick_calls, [["tiktok", "instagram"]])
-        self.assertEqual(pubs["youtube"]["via"], "direct")
-        self.assertEqual(pubs["youtube"]["status"], "published")
-        self.assertEqual((pubs["tiktok"]["via"], pubs["tiktok"]["status"], pubs["tiktok"]["id"]), ("quick", "processing", "req-1"))
-        self.assertEqual(pubs["instagram"]["status"], "processing")
+        self.assertEqual(used, [("tok-UC_b", "unlisted")])
+        self.assertEqual(record["status"], "published")
+        self.assertEqual(record["channel"], "Canal B")
+        with self.assertRaises(SocialError):
+            publisher.publish(job["id"], 1, "UC_desconocido", {})
 
 
 if __name__ == "__main__":

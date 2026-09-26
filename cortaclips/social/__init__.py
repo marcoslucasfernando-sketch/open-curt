@@ -1,9 +1,7 @@
-"""Conexiones con redes sociales y publicación de clips.
+"""Publicación en YouTube con la API oficial (OAuth con tu ID de cliente y secreto de Google).
 
-Cada red puede conectarse de dos formas:
-- Conexión rápida (Upload-Post): inicias sesión en la red y listo, sin crear apps de desarrollador.
-- Conexión directa (avanzado): OAuth con tu propia app de desarrollador de cada red.
-Al publicar se usa la directa si existe; si no, la rápida.
+Admite varios canales de la misma cuenta de Google (personal y de marca): cada canal se
+autoriza por separado («Añadir canal») y al subir eliges a cuál va.
 """
 
 from __future__ import annotations
@@ -14,98 +12,116 @@ from pathlib import Path
 
 from .. import config
 from ..util import format_exception
-from . import instagram, oauth, tiktok, uploadpost, youtube
+from . import oauth, youtube
 from .oauth import SocialError
 
-PLATFORMS = {"youtube": youtube, "tiktok": tiktok, "instagram": instagram}
-TARGETS = ("youtube", "tiktok", "instagram")
+PLATFORMS = {"youtube": youtube}
+PREFIX = "youtube:"
+
+
+def _migrate() -> None:
+    """Versiones anteriores guardaban un solo canal con la clave «youtube»."""
+    old = oauth.get_token("youtube")
+    if old:
+        channel = (old.get("account") or {}).get("id")
+        if channel and not oauth.get_token(PREFIX + channel):
+            oauth.set_token(PREFIX + channel, old)
+        oauth.delete_token("youtube")
+
+
+def channels() -> list[dict]:
+    _migrate()
+    default = config.get_settings().get("youtube_channel", "")
+    found = []
+    for key, token in sorted(oauth.all_tokens().items()):
+        if key.startswith(PREFIX):
+            account = token.get("account") or {}
+            found.append({"id": key[len(PREFIX):], "name": account.get("name") or "Canal", "avatar": account.get("avatar", "")})
+    if found and default not in {c["id"] for c in found}:
+        default = found[0]["id"]
+    for channel in found:
+        channel["default"] = channel["id"] == default
+    return found
+
+
+def default_channel() -> str:
+    return next((c["id"] for c in channels() if c["default"]), "")
 
 
 def status() -> dict:
-    quick = uploadpost.accounts()
-    out = {}
-    for name, module in PLATFORMS.items():
-        token = oauth.get_token(name)
-        via = "direct" if token else ("quick" if name in quick else "")
-        account = (token or {}).get("account", {}) if token else quick.get(name, {})
-        out[name] = {
-            "label": module.LABEL,
-            "configured": module.configured(),
-            "connected": bool(via),
-            "via": via,
-            "direct": bool(token),
-            "quick": name in quick,
-            "reauth": bool(quick.get(name, {}).get("reauth")) and not token,
-            "account": account,
-            "expires_at": (token or {}).get("refresh_expires_at") or ((token or {}).get("expires_at") if name == "instagram" else None),
-            "setup": module.setup(),
+    listed = channels()
+    return {
+        "youtube": {
+            "label": youtube.LABEL,
+            "configured": youtube.configured(),
+            "connected": bool(listed),
+            "channels": listed,
+            "default": next((c["id"] for c in listed if c["default"]), ""),
+            "setup": youtube.setup(),
         }
-    out["quick"] = {"configured": uploadpost.configured(), "profile": config.env("UPLOAD_POST_USER"), "signup": uploadpost.SIGNUP_URL}
-    return out
+    }
 
 
-def route(platform: str) -> str:
-    """'direct', 'quick' o '' según cómo se puede publicar en esa red ahora mismo."""
-    if oauth.get_token(platform):
-        return "direct"
-    if platform in uploadpost.accounts(max_age=5):
-        return "quick"
-    return ""
+def start(platform: str = "youtube") -> str:
+    if platform != "youtube":
+        raise SocialError("Solo se puede conectar YouTube.")
+    if not youtube.configured():
+        raise SocialError("Falta el ID de cliente y el secreto de Google.", "Pégalos en Ajustes → YouTube.")
+    verifier, challenge = oauth.pkce_pair()
+    state = oauth.new_state("youtube", verifier, youtube.redirect_uri())
+    return youtube.auth_url(state, challenge)
 
 
-def start(platform: str) -> str:
-    module = PLATFORMS.get(platform)
-    if not module:
-        raise SocialError("Red social desconocida.")
-    if not module.configured():
-        raise SocialError(f"Falta configurar la app de {module.LABEL}.", "Rellena el ID y el secreto en Ajustes → Redes → Avanzado.")
-    verifier, challenge = oauth.pkce_pair(hex_challenge=getattr(module, "PKCE_HEX", False))
-    state = oauth.new_state(platform, verifier, module.redirect_uri())
-    return module.auth_url(state, challenge)
-
-
-def complete(params: dict) -> str:
-    """Termina el OAuth directo con los parámetros que devuelve la red social. Devuelve la plataforma."""
-    state = params.get("state", "")
-    entry = oauth.pop_state(state)
-    platform = entry["platform"]
-    module = PLATFORMS[platform]
+def complete(params: dict) -> dict:
+    """Termina el inicio de sesión con Google y guarda el canal elegido. Devuelve el canal."""
+    entry = oauth.pop_state(params.get("state", ""))
     if params.get("error"):
-        description = params.get("error_description") or params.get("error_reason") or params["error"]
-        raise SocialError(f"{module.LABEL}: autorización cancelada.", str(description)[:300])
+        if params["error"] == "access_denied":
+            raise SocialError("Has cancelado el inicio de sesión con Google.", "Vuelve a pulsar «Iniciar sesión con Google» y acepta los permisos.")
+        raise SocialError("Google no completó el inicio de sesión.", str(params.get("error_description") or params["error"])[:300])
     code = params.get("code", "")
     if not code:
-        raise SocialError(f"{module.LABEL} no devolvió el código de autorización.", "Vuelve a intentarlo.")
-    token = module.exchange(code, entry["verifier"], entry["redirect_uri"])
+        raise SocialError("Google no devolvió el código de autorización.", "Vuelve a intentarlo.")
+    token = youtube.exchange(code, entry["verifier"], entry["redirect_uri"])
     token["connected_at"] = time.time()
-    oauth.set_token(platform, token)
-    return platform
+    channel = token["account"]["id"]
+    oauth.set_token(PREFIX + channel, token)
+    if not default_channel() or len(channels()) == 1:
+        config.update_settings({"youtube_channel": channel})
+    return token["account"]
 
 
-def disconnect(platform: str) -> None:
-    oauth.delete_token(platform)
+def disconnect(channel: str) -> None:
+    oauth.delete_token(PREFIX + channel)
+    if config.get_settings().get("youtube_channel") == channel:
+        remaining = channels()
+        config.update_settings({"youtube_channel": remaining[0]["id"] if remaining else ""})
 
 
-def valid_token(platform: str) -> dict:
-    module = PLATFORMS[platform]
-    token = oauth.get_token(platform)
+def set_default(channel: str) -> None:
+    if not oauth.get_token(PREFIX + channel):
+        raise SocialError("Ese canal no está conectado.")
+    config.update_settings({"youtube_channel": channel})
+
+
+def valid_token(channel: str) -> dict:
+    token = oauth.get_token(PREFIX + channel)
     if not token:
-        raise SocialError(f"{module.LABEL} no está conectado.", "Conéctalo en Ajustes → Redes.")
-    stale = module.needs_refresh(token) if hasattr(module, "needs_refresh") else token.get("expires_at", 0) < time.time() + 120
-    if stale:
-        token = module.refresh(token)
-        oauth.set_token(platform, token)
+        raise SocialError("Ese canal de YouTube no está conectado.", "Ajustes → YouTube → Añadir otro canal.")
+    if token.get("expires_at", 0) < time.time() + 120:
+        token = youtube.refresh(token)
+        oauth.set_token(PREFIX + channel, token)
     return token
 
 
 class Publisher:
-    """Publica clips en segundo plano y guarda el estado en el propio clip."""
+    """Sube clips a YouTube en segundo plano y guarda el estado en el propio clip (uno por canal)."""
 
     def __init__(self, manager):
         self.manager = manager
         self.lock = threading.Lock()
 
-    def publish(self, job_id: str, number: int, targets: list[str], options: dict) -> None:
+    def publish(self, job_id: str, number: int, channel: str = "", options: dict | None = None) -> None:
         job = self.manager.get(job_id)
         if not job:
             raise SocialError("Trabajo no encontrado.")
@@ -114,111 +130,58 @@ class Publisher:
             raise SocialError("El clip aún no está listo.")
         if clip.get("status") == "rendering":
             raise SocialError("Espera a que termine de renderizarse.")
-        if "uploadpost" in targets:  # compatibilidad: «todas las de la conexión rápida»
-            targets = [t for t in targets if t != "uploadpost"] + list(uploadpost.accounts(max_age=0))
-        targets = [t for t in dict.fromkeys(targets) if t in TARGETS]
-        if not targets:
-            raise SocialError("Elige al menos una red.")
-        routes = {}
-        for target in targets:
-            routes[target] = route(target)
-            if not routes[target]:
-                raise SocialError(f"{PLATFORMS[target].LABEL} no está conectado.", "Conéctalo en Ajustes → Redes.")
-            current = (clip.get("publications") or {}).get(target, {})
-            if current.get("status") in ("uploading", "processing"):
-                raise SocialError(f"Ya se está enviando a {PLATFORMS[target].LABEL}.")
-        settings = {**config.get_settings(), **options}
-        for target in targets:
-            self._record(job_id, number, target, status="uploading", progress=0.0, message="Preparando…", url="", id="", error="",
-                         via=routes[target])
-        for target in [t for t in targets if routes[t] == "direct"]:
-            threading.Thread(target=self._run_direct, args=(job_id, number, target, settings), daemon=True).start()
-        quick = [t for t in targets if routes[t] == "quick"]
-        if quick:
-            threading.Thread(target=self._run_quick, args=(job_id, number, quick), daemon=True).start()
+        channel = channel or default_channel()
+        info = next((c for c in channels() if c["id"] == channel), None)
+        if not info:
+            raise SocialError("Ese canal de YouTube no está conectado.", "Ajustes → YouTube → Añadir otro canal.")
+        key = PREFIX + channel
+        if ((clip.get("publications") or {}).get(key) or {}).get("status") == "uploading":
+            raise SocialError(f"Este clip ya se está subiendo a {info['name']}.")
+        settings = {**config.get_settings(), **(options or {})}
+        self._record(job_id, number, key, status="uploading", progress=0.0, message="Preparando…", url="", id="", error="",
+                     channel=info["name"], privacy=settings.get("youtube_privacy", "public"))
+        threading.Thread(target=self._run, args=(job_id, number, channel, settings), daemon=True).start()
 
-    def _record(self, job_id: str, number: int, target: str, **values) -> None:
+    def _record(self, job_id: str, number: int, key: str, **values) -> None:
         with self.lock:
             job = self.manager.get(job_id)
             clip = next(c for c in job["clips"] if c["number"] == number)
             publications = dict(clip.get("publications") or {})
-            publications[target] = {**publications.get(target, {}), **values, "at": time.time()}
+            publications[key] = {**publications.get(key, {}), **values, "at": time.time()}
             self.manager.update_clip(job_id, number, publications=publications)
 
-    def _clip(self, job_id: str, number: int) -> tuple[Path, dict]:
+    def _run(self, job_id: str, number: int, channel: str, settings: dict) -> None:
+        key = PREFIX + channel
         job = self.manager.get(job_id)
         clip = next(c for c in job["clips"] if c["number"] == number)
-        return self.manager.outputs / job_id / clip["file"], clip
-
-    def _run_direct(self, job_id: str, number: int, target: str, settings: dict) -> None:
-        video, clip = self._clip(job_id, number)
+        video = self.manager.outputs / job_id / clip["file"]
 
         def progress(fraction: float, message: str) -> None:
-            self._record(job_id, number, target, progress=round(fraction, 3), message=message)
+            self._record(job_id, number, key, progress=round(fraction, 3), message=message)
 
         try:
-            token = valid_token(target)
+            token = valid_token(channel)
             try:
-                result = PLATFORMS[target].publish(token, video, clip, settings, progress)
+                result = youtube.publish(token, video, clip, settings, progress)
             except SocialError as exc:
-                if exc.status != 401 and exc.code not in ("auth", "access_token_invalid", "190"):
+                if exc.status != 401 and exc.code != "auth":
                     raise
-                token = PLATFORMS[target].refresh(token)
-                oauth.set_token(target, token)
-                result = PLATFORMS[target].publish(token, video, clip, settings, progress)
-            self._record(job_id, number, target, progress=1.0, error="", **result)
+                token = youtube.refresh(token)
+                oauth.set_token(key, token)
+                result = youtube.publish(token, video, clip, settings, progress)
+            self._record(job_id, number, key, progress=1.0, error="", **result)
         except Exception as exc:  # noqa: BLE001
-            self._fail(job_id, number, [target], exc)
-
-    def _run_quick(self, job_id: str, number: int, targets: list[str]) -> None:
-        video, clip = self._clip(job_id, number)
-
-        def progress(fraction: float, message: str) -> None:
-            for target in targets:
-                self._record(job_id, number, target, progress=round(fraction, 3), message=message)
-
-        try:
-            result = uploadpost.publish(video, clip, job_id, progress, targets)
-            for target in targets:
-                self._record(job_id, number, target, progress=1.0, error="", **result)
-        except Exception as exc:  # noqa: BLE001
-            self._fail(job_id, number, targets, exc)
-
-    def _fail(self, job_id: str, number: int, targets: list[str], exc: BaseException) -> None:
-        self._log(self.manager.outputs / job_id, ",".join(targets), exc)
-        if isinstance(exc, SocialError):
-            error, hint = exc.message, exc.hint
-        else:
-            error, hint = f"Error inesperado: {exc}"[:300], "Revisa job.log"
-        for target in targets:
-            self._record(job_id, number, target, status="error", error=error, message=hint, progress=0.0)
-
-    def refresh_status(self, job_id: str, number: int, target: str) -> None:
-        job = self.manager.get(job_id)
-        clip = next((c for c in job["clips"] if c["number"] == number), None) if job else None
-        record = ((clip or {}).get("publications") or {}).get(target)
-        if not record or record.get("status") != "processing" or not record.get("id"):
-            return
-        try:
-            if record.get("via") == "quick":
-                updated = uploadpost.check(record, target)
-            elif target == "tiktok":
-                updated = {**record, **tiktok.wait(valid_token("tiktok"), record["id"], settings_mode(), lambda *_: None, timeout=1)}
+            self._log(self.manager.outputs / job_id, exc)
+            if isinstance(exc, SocialError):
+                error, hint = exc.message, exc.hint
             else:
-                return
-            self._record(job_id, number, target, **{k: v for k, v in updated.items() if k != "at"})
-        except SocialError as exc:
-            self._record(job_id, number, target, message=exc.message)
+                error, hint = f"Error inesperado: {exc}"[:300], "Revisa job.log"
+            self._record(job_id, number, key, status="error", error=error, message=hint, progress=0.0)
 
     @staticmethod
-    def _log(folder: Path, target: str, exc: BaseException) -> None:
+    def _log(folder: Path, exc: BaseException) -> None:
         try:
             with (folder / "job.log").open("a", encoding="utf-8") as handle:
-                detail = getattr(exc, "detail", "")
-                handle.write(f"[publicación {target}] {exc}\n{detail}\n{format_exception(exc)}\n")
+                handle.write(f"[YouTube] {exc}\n{getattr(exc, 'detail', '')}\n{format_exception(exc)}\n")
         except OSError:
             pass
-
-
-def settings_mode() -> str:
-    return config.get_settings().get("tiktok_mode", "draft")

@@ -35,18 +35,7 @@ ENV_KEYS: dict[str, str] = {
     "OPENAI_API_KEY": "secret",
     "YOUTUBE_CLIENT_ID": "plain",
     "YOUTUBE_CLIENT_SECRET": "secret",
-    "TIKTOK_CLIENT_KEY": "plain",
-    "TIKTOK_CLIENT_SECRET": "secret",
-    "INSTAGRAM_APP_ID": "plain",
-    "INSTAGRAM_APP_SECRET": "secret",
-    "OAUTH_HTTPS_REDIRECT": "plain",
-    "UPLOAD_POST_API_KEY": "secret",
-    "UPLOAD_POST_USER": "plain",
 }
-
-# Página HTTPS pública (Netlify) que devuelve el código OAuth a http://127.0.0.1.
-# Instagram exige redirecciones HTTPS; YouTube y TikTok aceptan 127.0.0.1 directamente.
-DEFAULT_HTTPS_REDIRECT = "https://corta-clips.netlify.app/oauth/callback"
 
 _lock = threading.Lock()
 
@@ -116,10 +105,6 @@ def env(name: str, default: str = "") -> str:
     return os.environ.get(name, default).strip()
 
 
-def https_redirect() -> str:
-    return env("OAUTH_HTTPS_REDIRECT") or DEFAULT_HTTPS_REDIRECT
-
-
 def credential_flags() -> dict[str, dict]:
     """Estado de cada credencial sin revelar secretos."""
     flags = {}
@@ -154,8 +139,7 @@ DEFAULT_SETTINGS: dict = {
     "min_seconds": 20,
     "max_seconds": 60,
     "youtube_privacy": "public",    # public | unlisted | private
-    "tiktok_mode": "draft",         # draft (bandeja de TikTok) | direct
-    "tiktok_privacy": "SELF_ONLY",
+    "youtube_channel": "",          # canal por defecto (ID) cuando hay varios conectados
 }
 
 CHOICES: dict[str, tuple] = {
@@ -170,8 +154,6 @@ CHOICES: dict[str, tuple] = {
     "caption_color": ("yellow", "lime", "cyan", "pink", "orange"),
     "cookies_browser": ("", "chrome", "safari", "firefox", "edge", "brave", "chromium", "opera", "vivaldi"),
     "youtube_privacy": ("public", "unlisted", "private"),
-    "tiktok_mode": ("draft", "direct"),
-    "tiktok_privacy": ("SELF_ONLY", "MUTUAL_FOLLOW_FRIENDS", "FOLLOWER_OF_CREATOR", "PUBLIC_TO_EVERYONE"),
 }
 
 

@@ -201,6 +201,8 @@ details.more textarea{margin-top:10px}
 .netic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-weight:800;flex:none;background:#232932;color:#fff;object-fit:cover}
 .netic.yt{background:#ff2d2d}.netic.tt{background:#111;box-shadow:inset 0 0 0 1px #3a3f46}.netic.ig{background:linear-gradient(135deg,#feda75,#d62976 50%,#4f5bd5)}
 .okline{color:var(--ok)}
+.gbtn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1f1f1f;border:1px solid #dadce0;border-radius:999px;padding:10px 18px 10px 14px;font:600 14px var(--ui);cursor:pointer;box-shadow:0 1px 2px #0003}
+.gbtn:hover{background:#f7f8f8}.gbtn svg{width:18px;height:18px;flex:none}
 .acct img{width:24px;height:24px;border-radius:50%}
 .diag{display:grid;grid-template-columns:22px 1fr;gap:6px 10px;font-size:14px}
 .diag .hint{grid-column:2;color:var(--dim);font-size:12.5px;margin-top:-4px}
@@ -234,14 +236,14 @@ dialog::backdrop{background:#000a;backdrop-filter:blur(3px)}
     <div class="chips">
       <button class="chip" id="chipAi" data-tab="ia"><span class="dot"></span><span>IA…</span></button>
       <button class="chip hide-s" id="chipTr" data-tab="tr"><span class="dot"></span><span>Transcripción…</span></button>
-      <button class="chip" id="chipSoc" data-tab="redes"><span class="soc"><i class="yt">▶</i><i class="tt">♪</i><i class="ig">◎</i></span></button>
+      <button class="chip" id="chipSoc" data-tab="redes"><span class="soc"><i class="yt">▶</i></span><span>YouTube</span></button>
       <button class="iconbtn" id="openSettings" title="Ajustes" aria-label="Ajustes">⚙︎</button>
     </div>
   </header>
 
   <div class="eyebrow">Estudio local · GPT‑6 Luna</div>
   <h1>Del episodio eterno<br>a clips que <em>enganchan</em>.</h1>
-  <p class="lead">Pega un enlace o suelta un archivo. La IA encuentra los mejores momentos, los recorta en vertical siguiendo las caras, les pone subtítulos animados y los publica en tus redes.</p>
+  <p class="lead">Pega un enlace o suelta un archivo. La IA encuentra los mejores momentos, los recorta en vertical siguiendo las caras, les pone subtítulos animados y los sube a tus canales de YouTube.</p>
 
   <section class="panel">
     <div class="create">
@@ -300,7 +302,7 @@ dialog::backdrop{background:#000a;backdrop-filter:blur(3px)}
       <div class="actions">
         <a class="btn primary" id="zipBtn" href="#" download>⇩ Descargar todo (.zip)</a>
         <button class="btn" id="reselectBtn">↻ Elegir otros momentos</button>
-        <button class="btn" id="publishAllBtn">Publicar todos</button>
+        <button class="btn" id="publishAllBtn">Subir todos a YouTube</button>
       </div>
     </div>
     <div class="grid" id="grid"></div>
@@ -319,15 +321,15 @@ dialog::backdrop{background:#000a;backdrop-filter:blur(3px)}
   <div class="dhead"><h2>Ajustes</h2><button class="iconbtn" id="closeSettings" aria-label="Cerrar">✕</button></div>
   <nav class="tabs" id="tabs">
     <button class="tab on" data-tab="ia">IA</button><button class="tab" data-tab="tr">Transcripción</button>
-    <button class="tab" data-tab="estilo">Vídeo</button><button class="tab" data-tab="redes">Redes</button><button class="tab" data-tab="sistema">Sistema</button>
+    <button class="tab" data-tab="estilo">Vídeo</button><button class="tab" data-tab="redes">YouTube</button><button class="tab" data-tab="sistema">Sistema</button>
   </nav>
   <div class="dbody" id="dbody"></div>
 </aside>
 
 <dialog id="pubDlg"><form method="dialog">
-  <div class="mhead"><h2>Publicar</h2><div class="meta" id="pubWhat"></div></div>
+  <div class="mhead"><h2>Subir a YouTube</h2><div class="meta" id="pubWhat"></div></div>
   <div class="mbody" id="pubTargets"></div>
-  <div class="mfoot"><button class="btn" value="cancel">Cancelar</button><button class="btn primary" id="pubGo" value="ok">Publicar ahora</button></div>
+  <div class="mfoot"><button class="btn" value="cancel">Cancelar</button><button class="btn primary" id="pubGo" value="ok">Subir ahora</button></div>
 </form></dialog>
 
 <dialog id="reDlg"><form method="dialog">
@@ -383,8 +385,13 @@ const S = { status: null, settings: {}, jobId: null, job: null, timer: null, car
 const FONT_CSS = { bricolage: ['"Bricolage"', 800], poppins: ['"CC Poppins"', 900], anton: ['"CC Anton"', 400], montserrat: ['"CC Montserrat"', 900], unbounded: ['"CC Unbounded"', 800], bebas: ['"CC Bebas"', 400], archivo: ['"CC Archivo"', 400] };
 const COLORS = { yellow: "#ffe14d", lime: "#d5f878", cyan: "#5eeaff", pink: "#ff6ec7", orange: "#ff9632" };
 const STAGES = [["download", "⇣", "Descargar"], ["transcribe", "✎", "Transcribir"], ["select", "✦", "Elegir momentos"], ["render", "▣", "Montar clips"]];
-const TARGET_LABEL = { youtube: "YouTube Shorts", tiktok: "TikTok", instagram: "Instagram Reels", uploadpost: "Upload‑Post" };
-const PUB_STATUS = { uploading: "Subiendo…", processing: "Procesando…", published: "Publicado ✓", draft: "En borradores de TikTok", private: "Subido como privado", error: "Error" };
+const PUB_STATUS = { uploading: "Subiendo…", published: "Publicado ✓", private: "Subido como privado", error: "Error" };
+const G_ICON = '<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+function googleButton(label) {
+  const b = h("button", { class: "gbtn", type: "button", onclick: googleSignIn });
+  b.innerHTML = G_ICON; b.append(label);
+  return b;
+}
 
 /* ---------------------------------------------------------------- Estado del sistema */
 async function loadStatus() {
@@ -404,8 +411,9 @@ function paintChips() {
   const tr = $("#chipTr");
   tr.firstChild.className = "dot " + (st.transcription.active ? "ok" : "bad");
   tr.lastChild.textContent = st.transcription.active ? (st.transcription.active === "openai" ? "Whisper (API)" : `Transcripción local · ${st.transcription.model}`) : "Sin transcripción";
-  const soc = $("#chipSoc .soc").children;
-  ["youtube", "tiktok", "instagram"].forEach((p, i) => soc[i].classList.toggle("on", !!st.social[p].connected));
+  const yt = st.social.youtube;
+  $("#chipSoc .soc i").classList.toggle("on", yt.connected);
+  $("#chipSoc").lastChild.textContent = yt.connected ? (yt.channels.length > 1 ? `YouTube · ${yt.channels.length} canales` : yt.channels[0].name) : "Conectar YouTube";
 }
 let defaultsFilled = false;
 function fillDefaults() {
@@ -610,7 +618,7 @@ function buildCard(el, job, clip) {
   el.replaceChildren(vid, h("div", { class: "body" },
     title,
     h("div", {}, h("div", { class: "mini", text: "Gancho en pantalla" }), hook),
-    h("div", {}, h("div", { class: "mini", text: "Descripción para redes" }), caption, tags),
+    h("div", {}, h("div", { class: "mini", text: "Descripción para YouTube" }), caption, tags),
     h("p", { class: "reason", text: "💡 " + (clip.reason || "") }),
     h("div", {}, h("div", { class: "mini", text: `Corte · ${fmt(clip.start)} → ${fmt(clip.end)} · ${(clip.end - clip.start).toFixed(1)} s` }), h("div", { class: "times" }, sBox, eBox)),
     clip.error ? h("div", { class: "warnline", text: "⚠ " + clip.error }) : null,
@@ -618,7 +626,7 @@ function buildCard(el, job, clip) {
     h("div", { class: "row" }, rerender,
       clip.file ? h("a", { class: "btn small", href: `/files/${job.id}/${clip.file}?download=1`, text: "MP4 ↓" }) : null,
       clip.srt ? h("a", { class: "btn small", href: `/files/${job.id}/${clip.srt}?download=1`, text: "SRT" }) : null,
-      h("button", { class: "btn small primary", text: "Publicar ↗", disabled: !clip.file || clip.status === "rendering", onclick: () => openPublish([clip.number]) })),
+      h("button", { class: "btn small primary", text: "Subir a YouTube ↗", disabled: !clip.file || clip.status === "rendering", onclick: () => openPublish([clip.number]) })),
     pubs));
 }
 function paintPubs(el, job, clip) {
@@ -628,9 +636,8 @@ function paintPubs(el, job, clip) {
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
   box.replaceChildren(...entries.map(([t, p]) => h("div", { class: "pub " + p.status },
-    h("b", { text: TARGET_LABEL[t] || t }),
-    h("span", { class: "st" }, p.url ? h("a", { href: p.url, target: "_blank", rel: "noopener", text: PUB_STATUS[p.status] + " ↗" }) : (p.status === "uploading" ? p.message : PUB_STATUS[p.status] || p.status),
-      p.status === "processing" ? h("button", { class: "btn small ghost", text: "↻", title: "Actualizar estado", onclick: async () => { try { await api(`/api/jobs/${job.id}/clips/${clip.number}/publication-status`, { method: "POST", body: { target: t } }); poll(); } catch (e) { fail(e); } } }) : null),
+    h("b", { text: "▶ " + (p.channel || "YouTube") }),
+    h("span", { class: "st" }, p.url ? h("a", { href: p.url, target: "_blank", rel: "noopener", text: PUB_STATUS[p.status] + " ↗" }) : (p.status === "uploading" ? p.message : PUB_STATUS[p.status] || p.status)),
     p.status === "uploading" ? h("div", { class: "pbar" }, h("i", { style: `width:${((p.progress || 0) * 100).toFixed(0)}%` })) : null,
     (p.error || (p.message && p.status !== "uploading")) ? h("div", { class: "small muted", style: "flex-basis:100%", text: [p.error, p.message].filter(Boolean).join(" — ") }) : null)));
 }
@@ -650,32 +657,42 @@ $("#publishAllBtn").onclick = () => S.job && openPublish(S.job.clips.filter(c =>
 /* ---------------------------------------------------------------- Publicar */
 function openPublish(numbers) {
   S.pubClip = numbers;
-  const soc = S.status.social;
+  const yt = S.status.social.youtube;
   $("#pubWhat").textContent = numbers.length === 1 ? `Clip #${numbers[0]} · «${S.job.clips.find(c => c.number === numbers[0]).title}»` : `${numbers.length} clips`;
   const rows = [];
-  for (const t of ["youtube", "tiktok", "instagram"]) {
-    const st = soc[t]; const on = st.connected && !st.reauth;
-    let sub = st.reauth ? "Hay que volver a conectar" : on ? (st.account?.name ? `Conectado como ${st.account.name}` : "Conectado") : "No conectado";
-    if (t === "tiktok" && on && st.via === "direct") sub += S.settings.tiktok_mode === "draft" ? " · irá a tus borradores" : ` · publicación directa (${S.settings.tiktok_privacy})`;
-    if (t === "youtube" && on && st.via === "direct") sub += ` · ${ { public: "público", unlisted: "oculto", private: "privado" }[S.settings.youtube_privacy] }`;
-    rows.push(h("label", { class: "target" + (on ? "" : " off") }, h("input", { type: "checkbox", value: t, disabled: !on, checked: on }),
-      h("div", {}, h("b", { text: TARGET_LABEL[t] }), h("div", { class: "sub", text: sub })),
-      on ? null : h("button", { class: "btn small", type: "button", style: "margin-left:auto", text: "Conectar", onclick: () => { $("#pubDlg").close(); openDrawer("redes"); } })));
+  $("#pubGo").disabled = !yt.connected;
+  if (!yt.connected) {
+    rows.push(h("p", { class: "muted", text: "Todavía no has conectado ningún canal de YouTube." }));
+    if (yt.configured) rows.push(googleButton("Iniciar sesión con Google"));
+    else rows.push(h("button", { class: "btn primary", type: "button", text: "Configurar YouTube", onclick: () => { $("#pubDlg").close(); openDrawer("redes"); } }));
+  } else {
+    rows.push(h("div", { class: "lbl", text: "¿A qué canal lo subo?" }));
+    for (const c of yt.channels) {
+      rows.push(h("label", { class: "target" }, h("input", { type: "radio", name: "pubch", value: c.id, checked: c.default }),
+        c.avatar ? h("img", { class: "netic", src: c.avatar, alt: "" }) : h("span", { class: "netic yt", text: "▶" }),
+        h("div", {}, h("b", { text: c.name }), h("div", { class: "sub", text: c.default ? "Canal por defecto" : "" }))));
+    }
+    rows.push(h("button", { class: "btn small ghost", type: "button", text: "＋ Añadir otro canal", onclick: googleSignIn }));
+    const privacy = h("select", { id: "pubPrivacy" }, ...[["public", "Público"], ["unlisted", "Oculto (solo con enlace)"], ["private", "Privado"]].map(([v, t]) => {
+      const o = h("option", { value: v, text: t }); if (S.settings.youtube_privacy === v) o.selected = true; return o; }));
+    rows.push(h("div", { class: "field", style: "margin-top:14px" }, h("label", { text: "Visibilidad" }), privacy),
+      h("div", { class: "small muted", style: "margin-top:8px", text: "Si tu proyecto de Google aún no está auditado, YouTube dejará el vídeo como privado." }));
   }
-  rows.push(h("div", { class: "small muted", style: "margin-top:6px", text: "¿Falta alguna red? Conéctala en Ajustes → Redes con un clic." }));
   $("#pubTargets").replaceChildren(...rows);
   $("#pubDlg").showModal();
 }
 $("#pubGo").onclick = async e => {
   e.preventDefault();
-  const targets = $$("#pubTargets input:checked").map(i => i.value);
-  if (!targets.length) { toast("Elige al menos una red conectada.", "bad"); return; }
+  const picked = $("#pubTargets input[name=pubch]:checked");
+  if (!picked) { toast("Elige un canal.", "bad"); return; }
+  const privacy = $("#pubPrivacy").value;
+  const name = S.status.social.youtube.channels.find(c => c.id === picked.value)?.name || "YouTube";
   $("#pubDlg").close();
   for (const n of S.pubClip) {
-    try { await api(`/api/jobs/${S.jobId}/clips/${n}/publish`, { method: "POST", body: { targets, options: {} } }); }
+    try { await api(`/api/jobs/${S.jobId}/clips/${n}/publish`, { method: "POST", body: { channel: picked.value, options: { youtube_privacy: privacy } } }); }
     catch (err) { fail(err); }
   }
-  toast("Enviando…", "ok", "Verás el progreso en cada clip."); poll();
+  toast(`Subiendo a ${name}…`, "ok", "Verás el progreso en cada clip."); poll();
 };
 
 /* ---------------------------------------------------------------- Historial */
@@ -790,66 +807,36 @@ function paintDrawer() {
       h("div", { class: "field" }, h("label", { text: "Clips" }), h("input", { type: "number", min: 1, max: 12, value: s.clip_count, onchange: e => saveSettings({ clip_count: +e.target.value }, false) })),
       h("div", { class: "field" }, h("label", { text: "Duración (s)" }), h("div", { class: "range" }, h("input", { type: "number", value: s.min_seconds, onchange: e => saveSettings({ min_seconds: +e.target.value }, false) }), h("span", { text: "–" }), h("input", { type: "number", value: s.max_seconds, onchange: e => saveSettings({ max_seconds: +e.target.value }, false) }))))));
   } else if (currentTab === "redes") {
-    const q = st.social.quick;
-    const NET = {
-      youtube: ["▶", "yt", "YouTube Shorts", "Entras con tu cuenta de Google."],
-      tiktok: ["♪", "tt", "TikTok", "Puedes usar «Continuar con Google»."],
-      instagram: ["◎", "ig", "Instagram Reels", "Con tu usuario de Instagram o Facebook (Instagram no admite Google). Debe ser cuenta profesional."],
-    };
-    const quick = h("div", { class: "box sel" }, h("div", { class: "boxhead" }, h("h3", { text: "Conecta tus redes" }), h("span", { class: "small muted", text: "Conexión rápida" })));
-    if (!q.configured) {
-      quick.append(
-        h("p", { class: "small muted", text: "Solo una vez: crea tu cuenta gratuita en Upload‑Post (puedes entrar con Google) y pega aquí tu API key. Después conectas cada red con un botón: inicias sesión y listo, sin crear apps ni configurar nada más." }),
-        h("ol", { class: "steps" },
-          h("li", {}, "Crea tu cuenta en ", h("a", { href: q.signup, target: "_blank", rel: "noopener", text: "app.upload-post.com ↗" }), " con «Continuar con Google»."),
-          h("li", { text: "Ve a «API Keys», crea una y cópiala." }),
-          h("li", { text: "Pégala aquí y pulsa Guardar." })),
-        h("div", { style: "margin-top:12px" }, credField("UPLOAD_POST_API_KEY", "API key de Upload‑Post", true),
-          h("button", { class: "btn primary small", text: "Guardar", onclick: e => saveCreds(e.target.closest(".box")) })));
+    const yt = st.social.youtube; const setup = yt.setup;
+    const box = h("div", { class: "box sel" }, h("div", { class: "boxhead" }, h("h3", { text: "Tus canales de YouTube" }), h("span", { class: "netic yt", text: "▶" })));
+    if (!yt.configured) {
+      box.append(h("p", { class: "small muted", text: "Paso único: pega abajo el ID de cliente y el secreto de tu proyecto de Google. Después inicias sesión con Google y listo." }));
+    } else if (!yt.connected) {
+      box.append(h("p", { class: "small muted", text: "Inicia sesión con la cuenta de Google de tu canal. Si tienes varios canales, Google te preguntará cuál quieres conectar." }), googleButton("Iniciar sesión con Google"));
     } else {
-      for (const p of ["youtube", "tiktok", "instagram"]) {
-        const info = st.social[p]; const [icon, cls, name, hint] = NET[p];
-        const good = info.connected && !info.reauth;
-        const line = info.reauth ? "Hay que volver a conectar" : info.connected
-          ? (info.account?.name ? `Conectado: ${info.account.name}` : "Conectado") + (info.via === "direct" ? " · conexión directa" : "") : hint;
-        quick.append(h("div", { class: "netrow" },
-          info.account?.avatar ? h("img", { class: "netic", src: info.account.avatar, alt: "" }) : h("span", { class: "netic " + cls, text: icon }),
-          h("div", { style: "flex:1;min-width:0" }, h("b", { text: name }), h("div", { class: "small " + (good ? "okline" : "muted"), text: line })),
-          h("button", { class: "btn small " + (good ? "" : "primary"), text: good ? "Reconectar" : "Conectar", onclick: () => quickConnect(p) })));
+      for (const c of yt.channels) {
+        box.append(h("div", { class: "netrow" },
+          c.avatar ? h("img", { class: "netic", src: c.avatar, alt: "" }) : h("span", { class: "netic yt", text: "▶" }),
+          h("div", { style: "flex:1;min-width:0" }, h("b", { text: c.name }), h("div", { class: "small " + (c.default ? "okline" : "muted"), text: c.default ? "Canal por defecto" : "Conectado" })),
+          c.default ? null : h("button", { class: "btn small", text: "Usar por defecto", onclick: () => channelAction(c.id, "default") }),
+          h("button", { class: "btn small ghost danger", text: "Quitar", onclick: () => { if (confirm(`¿Desconectar «${c.name}»?`)) channelAction(c.id, "disconnect"); } })));
       }
-      quick.append(h("div", { class: "small muted", style: "margin-top:12px", text: "Plan gratuito de Upload‑Post: 10 publicaciones al mes en YouTube e Instagram. Publicar en TikTok requiere un plan de pago." }),
-        h("details", { class: "more" }, h("summary", { text: "Cambiar la API key" }), h("div", { style: "margin-top:10px" }, credField("UPLOAD_POST_API_KEY", "API key", true),
-          h("button", { class: "btn small", text: "Guardar", onclick: e => saveCreds(e.target.closest("details")) }))));
+      box.append(h("div", { style: "margin-top:14px" }, googleButton("Añadir otro canal")),
+        h("div", { class: "small muted", style: "margin-top:8px", text: "Para conectar un segundo canal de la misma cuenta, pulsa «Añadir otro canal» y, cuando Google pregunte, elige ese canal." }),
+        h("div", { style: "margin-top:14px" }, sel("youtube_privacy", [["public", "Público"], ["unlisted", "Oculto (solo con enlace)"], ["private", "Privado"]], "Visibilidad por defecto")));
     }
-    out.push(quick);
-    const adv = h("details", { class: "more", style: "margin-top:20px" }, h("summary", { text: "Avanzado: conexión directa con tus propias apps de desarrollador (gratis, más pasos)" }),
-      h("p", { class: "muted small", text: "Crea una app gratuita en cada red (una sola vez) y Corta Clips publica sin intermediarios. Si una red está conectada así, se usa esta conexión en lugar de la rápida." }));
-    for (const p of ["youtube", "tiktok", "instagram"]) {
-      const info = st.social[p]; const setup = info.setup;
-      const box = h("div", { class: "box" + (info.direct ? " sel" : "") });
-      const acct = info.direct ? h("div", { class: "acct" }, info.account?.avatar ? h("img", { src: info.account.avatar, alt: "" }) : h("span", { class: "dot ok" }), h("b", { text: info.account?.name || "Conectado" })) : h("div", { class: "acct" }, h("span", { class: "dot " + (info.configured ? "warn" : "bad") }), info.configured ? "Listo para conectar" : "Falta configurar la app");
-      const connect = h("button", { class: "btn small " + (info.direct ? "" : "primary"), disabled: !info.configured, text: info.direct ? "Reconectar" : "Conectar", onclick: () => oauthConnect(p) });
-      const extra = [];
-      if (p === "youtube") extra.push(sel("youtube_privacy", [["public", "Público"], ["unlisted", "Oculto"], ["private", "Privado"]], "Visibilidad", "Sin auditoría de Google los vídeos quedan privados."));
-      if (p === "tiktok") extra.push(h("div", { class: "grid2" }, sel("tiktok_mode", [["draft", "Borrador (lo publicas desde la app)"], ["direct", "Publicación directa"]], "Modo"),
-        sel("tiktok_privacy", [["SELF_ONLY", "Solo yo"], ["MUTUAL_FOLLOW_FRIENDS", "Amigos"], ["FOLLOWER_OF_CREATOR", "Seguidores"], ["PUBLIC_TO_EVERYONE", "Todo el mundo"]], "Privacidad (directo)")));
-      if (p === "instagram") {
-        extra.push(credField("OAUTH_HTTPS_REDIRECT", "Página HTTPS de retorno (Netlify)", false));
-        const paste = h("input", { type: "text", placeholder: "Pega aquí la URL completa de la página de retorno" });
-        extra.push(h("details", { class: "more" }, h("summary", { text: "¿No volvió solo a Corta Clips?" }), h("div", { class: "copy" }, paste,
-          h("button", { class: "btn small", text: "Completar", onclick: async () => { try { await api("/oauth/complete", { method: "POST", body: { url: paste.value } }); toast("Instagram conectado", "ok"); loadStatus(); } catch (e) { fail(e); } } }))));
-      }
-      box.append(
-        h("div", { class: "boxhead" }, h("h3", { text: info.label }), h("div", { class: "row" }, connect, info.direct ? h("button", { class: "btn small ghost danger", text: "Desconectar", onclick: async () => { await api(`/api/social/${p}/disconnect`, { method: "POST", body: {} }); loadStatus(); } }) : null)),
-        acct, h("div", { style: "margin-top:12px" }, ...extra),
-        h("details", { class: "more", open: !info.configured }, h("summary", { text: "Configurar la app de desarrollador" }),
-          h("ol", { class: "steps" }, ...setup.steps.map(x => h("li", { text: x }))),
-          h("div", { class: "small muted", style: "margin-top:10px", text: "URL de redirección para registrar:" }), copyField(setup.redirect_uri),
-          h("div", { style: "margin-top:12px" }, ...setup.fields.map(f => credField(f, f.replaceAll("_", " "), f.includes("SECRET")))),
-          h("div", { class: "row" }, h("button", { class: "btn small primary", text: "Guardar", onclick: e => saveCreds(e.target.closest(".box")) }), h("a", { class: "btn small", href: setup.console, target: "_blank", rel: "noopener", text: "Abrir consola ↗" }))));
-      adv.append(box);
-    }
-    out.push(adv);
+    out.push(box);
+    const fields = h("div", { style: "margin-top:10px" }, credField("YOUTUBE_CLIENT_ID", "ID de cliente", false), credField("YOUTUBE_CLIENT_SECRET", "Secreto de cliente", true),
+      h("div", { class: "row" }, h("button", { class: "btn small primary", text: "Guardar", onclick: e => saveCreds(e.target.closest(".box")) }),
+        h("label", { class: "btn small" }, "Importar JSON de Google", h("input", { type: "file", accept: ".json,application/json", hidden: true, onchange: e => importClientJson(e.target.files[0]) }))),
+      h("div", { class: "small muted", style: "margin-top:8px", text: "Truco: en Google Cloud → Clientes puedes descargar el JSON del cliente e importarlo aquí; los dos campos se rellenan solos." }));
+    const steps = h("details", { class: "more", open: !yt.configured }, h("summary", { text: "Cómo conseguirlos (5 minutos, gratis)" }),
+      h("ol", { class: "steps" }, ...setup.steps.map(x => h("li", {}, x.text + " ", x.url ? h("a", { href: x.url, target: "_blank", rel: "noopener", text: x.link + " ↗" }) : null))),
+      ...setup.notes.map(n => h("p", { class: "small muted", text: n })),
+      h("p", { class: "small muted", text: "¿Creaste un cliente de tipo «Aplicación web»? Añade esta URI de redirección autorizada:" }), copyField(setup.redirect_uri),
+      h("p", { class: "small muted" }, "Para poder publicar en público: ", h("a", { href: setup.audit, target: "_blank", rel: "noopener", text: "solicitar la auditoría de la API ↗" })));
+    out.push(h("div", { class: "box" }, h("div", { class: "boxhead" }, h("h3", { text: "ID de cliente y secreto" }), h("span", { class: "small " + (yt.configured ? "okline" : "muted"), text: yt.configured ? "Guardados ✓" : "Paso único" })),
+      yt.configured ? h("details", { class: "more" }, h("summary", { text: "Cambiar ID de cliente y secreto" }), fields) : fields, steps));
   } else if (currentTab === "sistema") {
     const item = (ok, label, hint) => [h("span", { text: ok ? "✅" : "⚠️" }), h("span", { text: label }), !ok && hint ? h("span", { class: "hint", text: hint }) : null];
     out.push(h("div", { class: "box" }, h("h3", { text: "Diagnóstico" }), h("div", { class: "diag", style: "margin-top:12px" },
@@ -867,41 +854,39 @@ function paintDrawer() {
   }
   body.replaceChildren(...out);
 }
-function oauthConnect(platform) {
-  const w = window.open(`/oauth/start/${platform}`, "cortaclips-oauth", "width=560,height=760");
-  if (!w) location.href = `/oauth/start/${platform}`;
-  let n = 0; const t = setInterval(async () => { n++; await loadStatus(); if (S.status.social[platform].connected || n > 100) { clearInterval(t); if (S.status.social[platform].connected) toast(`${TARGET_LABEL[platform]} conectado ✓`, "ok"); } }, 3000);
+function googleSignIn() {
+  const before = (S.status?.social.youtube.channels || []).map(c => c.id);
+  const w = window.open("/oauth/start/youtube", "cortaclips-oauth", "width=560,height=760");
+  if (!w) { location.href = "/oauth/start/youtube"; return; }
+  let n = 0;
+  const t = setInterval(async () => {
+    n++;
+    await loadStatus();
+    const now = S.status.social.youtube.channels;
+    const added = now.find(c => !before.includes(c.id));
+    if (added || n > 100 || w.closed && n > 2) {
+      clearInterval(t);
+      if (added) { toast(`Canal «${added.name}» conectado ✓`, "ok"); if (S.pubClip && $("#pubDlg").open) openPublish(S.pubClip); }
+      else if (w.closed && now.length === before.length) toast("No se añadió ningún canal nuevo.", "", "Si elegiste un canal ya conectado, solo se ha renovado su acceso.");
+    }
+  }, 2000);
 }
-async function quickConnect(platform) {
-  const w = window.open("about:blank", "cortaclips-oauth", "width=560,height=760");
+async function channelAction(id, action) {
+  try { await api(`/api/youtube/channels/${encodeURIComponent(id)}/${action}`, { method: "POST", body: {} }); await loadStatus(); }
+  catch (e) { fail(e); }
+}
+async function importClientJson(file) {
+  if (!file) return;
   try {
-    const { url } = await api("/api/social/quick/connect", { method: "POST", body: { platform } });
-    if (w) w.location = url; else location.href = url;
-    let n = 0;
-    const t = setInterval(async () => {
-      n++;
-      await api("/api/social/quick/refresh", { method: "POST", body: {} }).catch(() => {});
-      await loadStatus();
-      const s = S.status.social[platform];
-      if ((s.quick && !s.reauth) || n > 60) { clearInterval(t); if (s.quick) toast(`${TARGET_LABEL[platform]} conectado ✓`, "ok"); }
-    }, 4000);
-  } catch (e) { if (w) w.close(); fail(e); }
+    const data = JSON.parse(await file.text());
+    const c = data.installed || data.web;
+    if (!c || !c.client_id || !c.client_secret) throw new Error("Ese JSON no es un cliente OAuth de Google.");
+    await api("/api/credentials", { method: "POST", body: { YOUTUBE_CLIENT_ID: c.client_id, YOUTUBE_CLIENT_SECRET: c.client_secret } });
+    toast("ID de cliente y secreto importados ✓", "ok");
+    await loadStatus();
+  } catch (e) { fail(e); }
 }
-window.addEventListener("message", e => {
-  if (e.origin !== location.origin || e.data?.cortaclips !== "oauth") return;
-  api("/api/social/quick/refresh", { method: "POST", body: {} }).catch(() => {}).finally(loadStatus);
-});
-(function returnFromConnect() {
-  const q = new URLSearchParams(location.search);
-  if (!q.has("conectado")) return;
-  const ok = (q.get("connect_status") || "success") === "success";
-  if (window.opener && !window.opener.closed) {
-    try { window.opener.postMessage({ cortaclips: "oauth", ok }, location.origin); } catch (e) {}
-    window.close();
-  }
-  history.replaceState(null, "", "/");
-  setTimeout(() => toast(ok ? `${TARGET_LABEL[q.get("conectado")] || "Red"} conectado ✓` : "No se completó la conexión", ok ? "ok" : "bad", q.get("error_code") || ""), 600);
-})();
+window.addEventListener("message", e => { if (e.origin === location.origin && e.data?.cortaclips === "oauth") loadStatus(); });
 
 loadStatus(); loadHistory();
 setInterval(() => { if (!document.hidden) loadStatus(); }, 30000);

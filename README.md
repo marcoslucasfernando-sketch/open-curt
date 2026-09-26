@@ -1,6 +1,6 @@
 # ✂ Corta Clips
 
-Convierte vídeos y podcasts largos en **clips verticales listos para redes**: la IA (**GPT‑6 Luna**) encuentra los mejores momentos, la app los recorta en 9:16 **siguiendo las caras**, añade **subtítulos animados palabra a palabra** y los **publica en YouTube Shorts, TikTok e Instagram Reels** con OAuth.
+Convierte vídeos y podcasts largos en **clips verticales listos para redes**: la IA (**GPT‑6 Luna**) encuentra los mejores momentos, la app los recorta en 9:16 **siguiendo las caras**, añade **subtítulos animados palabra a palabra** y los **sube a tus canales de YouTube** con la API oficial.
 
 Todo se ejecuta en tu ordenador. Web pública (privacidad, términos y retorno OAuth): **https://corta-clips.netlify.app**
 
@@ -17,7 +17,7 @@ Todo se ejecuta en tu ordenador. Web pública (privacidad, términos y retorno O
 | 🎯 **Encuadre inteligente** | Detecta caras (OpenCV YuNet) y recorta a vertical siguiéndolas, sin temblores. Si no hay caras, usa el vídeo entero sobre un fondo difuminado. |
 | 🔤 **Subtítulos con estilo** | Karaoke, caja o limpio; 7 tipografías (Bricolage, Poppins, Anton, Montserrat, Unbounded, Bebas Neue, Archivo Black) y 5 colores. Además, archivo `.srt` de cada clip. |
 | 🔊 **Sonido de redes** | Volumen normalizado a −14 LUFS. |
-| ↗ **Publicación en un clic** | Conecta YouTube, TikTok e Instagram iniciando sesión (conexión rápida), o con tus propias apps OAuth (avanzado). |
+| ↗ **Subida a YouTube** | API oficial de YouTube con tu ID de cliente y secreto. Varios canales de la misma cuenta; eliges a cuál sube cada clip. |
 | 🛠️ **Edición** | Ajusta inicio y fin (con «empezar/terminar aquí» desde el reproductor), edita títulos y textos, vuelve a renderizar o pide **otros momentos** sin volver a transcribir. |
 | 🧾 **Errores claros** | Cada fallo dice qué pasó y cómo arreglarlo, con registro técnico descargable y botón **Reintentar**, que reaprovecha lo ya descargado y transcrito. |
 
@@ -66,57 +66,26 @@ En **Automático** se usa lo primero que esté conectado, en este orden: API →
 
 ---
 
-## Conectar redes sociales
+## Subir a YouTube (uno o varios canales)
 
-### Conexión rápida (recomendada): inicias sesión y listo
-1. Crea una cuenta gratuita en [Upload‑Post](https://app.upload-post.com/) con «Continuar con Google».
-2. Ve a **API Keys**, crea una clave y pégala en **Ajustes → Redes**. Es lo único que se copia, y solo una vez.
-3. Pulsa **Conectar** en YouTube, TikTok e Instagram. Se abre el inicio de sesión oficial de cada red:
-   - **YouTube:** entras con tu cuenta de Google.
-   - **TikTok:** puedes usar «Continuar con Google».
-   - **Instagram:** Instagram no admite Google; entras con tu usuario de Instagram o con Facebook. La cuenta debe ser profesional (Creador o Empresa).
+Corta Clips sube los clips con la **API oficial de YouTube**, usando tu propio **ID de cliente y secreto** de Google.
 
-Corta Clips crea tu perfil de Upload‑Post automáticamente y muestra qué cuentas están conectadas. Upload‑Post ya tiene sus apps aprobadas por las tres redes, así que los vídeos se publican en público sin auditorías.
+**Paso único (5 minutos, gratis).** En **Ajustes → YouTube → «Cómo conseguirlos»** tienes cada paso con su enlace directo:
+1. [Crea un proyecto](https://console.cloud.google.com/projectcreate) en Google Cloud (por ejemplo «Corta Clips»).
+2. [Activa «YouTube Data API v3»](https://console.cloud.google.com/apis/library/youtube.googleapis.com).
+3. [Configura la pantalla de acceso](https://console.cloud.google.com/auth/branding): nombre de la app, tu correo y usuarios «Externo».
+4. En [Público](https://console.cloud.google.com/auth/audience) añade tu Gmail como usuario de prueba y pulsa **Publicar aplicación**. Si no, el acceso caduca cada 7 días.
+5. [Crea un cliente](https://console.cloud.google.com/auth/clients/create) de tipo **Aplicación de escritorio**. Copia el ID de cliente y el secreto en la app, o descarga su JSON y pulsa **Importar JSON de Google**.
 
-> Plan gratuito de Upload‑Post: 10 publicaciones al mes en YouTube e Instagram. Para publicar en TikTok necesitas un plan de pago.
+**Conectar tus canales**
+- Pulsa **Iniciar sesión con Google** y elige el canal.
+- **¿Tienes dos canales en la misma cuenta** (el personal y uno de marca, por ejemplo)? Pulsa **Añadir otro canal** y, cuando Google pregunte, elige el segundo. Puedes conectar todos los que quieras y marcar uno como **canal por defecto**.
+- Al subir un clip eliges **a qué canal va** y su visibilidad (público, oculto o privado). Puedes subir el mismo clip a los dos canales.
+- La primera vez Google avisa de que la app no está verificada: pulsa **Configuración avanzada → Ir a Corta Clips**. Es tu propia app.
 
-### Avanzado: conexión directa con tus propias apps (gratis, más pasos)
+> ⚠️ Mientras Google no audite tu proyecto, YouTube deja como **privados** los vídeos subidos por API. La [auditoría](https://support.google.com/youtube/contact/yt_api_form) es gratuita.
 
-Si prefieres no depender de un intermediario, crea **una vez** una app de desarrollador gratuita en cada red. En **Ajustes → Redes → Avanzado** tienes los pasos, la URL de redirección con botón de copiar y los campos para pegar las claves. Si una red está conectada de esta forma, se usa esta conexión en lugar de la rápida.
-
-Estas URLs sirven para rellenar las fichas de las apps:
-
-| Campo que piden | URL |
-|---|---|
-| Web / sitio | `https://corta-clips.netlify.app` |
-| Política de privacidad | `https://corta-clips.netlify.app/privacidad` |
-| Términos del servicio | `https://corta-clips.netlify.app/terminos` |
-| Eliminación de datos (Meta) | `https://corta-clips.netlify.app/eliminacion-datos` |
-
-#### YouTube Shorts
-1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials): crea un proyecto y activa **YouTube Data API v3**.
-2. Configura la **pantalla de consentimiento OAuth** (tipo Externo), añade tu cuenta como usuario de prueba y pásala a **«En producción»**. Si la dejas en «Prueba», el acceso caduca cada 7 días.
-3. **Crear credenciales → ID de cliente OAuth → «App de escritorio»**. Pega el ID y el secreto en la app.
-4. Pulsa **Conectar**. Se usa la redirección `http://127.0.0.1:8766/oauth/callback`.
-
-> ⚠️ Google deja como **privados** los vídeos subidos por API desde proyectos sin auditar. Puedes hacerlos públicos a mano en YouTube Studio o solicitar la [auditoría](https://support.google.com/youtube/contact/yt_api_form).
-
-#### TikTok
-1. [developers.tiktok.com](https://developers.tiktok.com/apps): crea una app y añade **Login Kit** y **Content Posting API**.
-2. En Login Kit elige la plataforma **Desktop** y registra `http://127.0.0.1:8766/oauth/callback`.
-3. Pide los permisos `user.info.basic`, `video.upload` y `video.publish`. Pega el Client Key y el Client Secret en la app.
-4. Elige el modo en Ajustes → Redes:
-   - **Borrador** (recomendado mientras la app no esté auditada): el vídeo llega a tu bandeja de TikTok y lo publicas desde el móvil, donde además puedes añadir música.
-   - **Directo**: sin auditoría, TikTok solo permite «Solo yo».
-
-#### Instagram Reels
-1. Tu cuenta de Instagram debe ser **profesional** (Creador o Empresa).
-2. [developers.facebook.com](https://developers.facebook.com/apps/): crea una app de tipo Empresa y añade **Instagram → API con inicio de sesión de Instagram**.
-3. En «Configurar inicio de sesión para empresas» añade la redirección **`https://corta-clips.netlify.app/oauth/callback`**. Instagram exige HTTPS, así que esa página reenvía el código a tu ordenador (`127.0.0.1`) sin guardar nada.
-4. En **Roles → Probadores de Instagram** añade tu cuenta y acepta la invitación en Instagram (Ajustes → Apps y sitios web).
-5. Pega el **ID y la clave secreta de la app de Instagram** (no los de Facebook) y pulsa **Conectar**. Si no vuelve sola a la app, pega la URL final en «¿No volvió solo?».
-
----
+Para TikTok e Instagram: descarga los clips (botón **Descargar todo (.zip)**) y súbelos desde el móvil; ya van en formato vertical con subtítulos.
 
 ## Problemas frecuentes
 
@@ -128,7 +97,8 @@ Estas URLs sirven para rellenar las fichas de las apps:
 | «No hay ninguna IA conectada» | Ajustes → IA → Conectar con ChatGPT o pega tu API key. |
 | «Tu cuenta de ChatGPT no permite usar gpt‑6‑luna en Codex» | Cambia el modelo en Ajustes → IA o usa una API key. |
 | «No hay ningún motor de transcripción» | Abre `iniciar.command` (instala la transcripción local) o añade `OPENAI_API_KEY`. |
-| TikTok: «Solo yo» | Tu app no está auditada: usa el modo **Borrador**. |
+| El vídeo sale como privado en YouTube | Tu proyecto de Google no está auditado: solicita la auditoría (gratuita). |
+| «Ese ID de cliente no parece de Google» | Copia el ID completo, que termina en `.apps.googleusercontent.com`. |
 | Cualquier otro error | Pulsa **Registro técnico** en el panel del trabajo y comparte el texto. |
 
 Diagnóstico completo: **Ajustes → Sistema**, o `python3 app.py --check`.
@@ -138,9 +108,8 @@ Diagnóstico completo: **Ajustes → Sistema**, o `python3 app.py --check`.
 ## Privacidad y seguridad
 
 - La app escucha **solo en 127.0.0.1**, comprueba `Host` y `Origin` en cada petición (protección contra DNS rebinding y CSRF) y no sirve archivos fuera de la carpeta de cada trabajo.
-- Claves en `.env` y tokens OAuth en `.data/tokens.json`, ambos con permisos `600` y excluidos de Git.
+- Claves en `.env` y accesos de cada canal en `.data/tokens.json`, ambos con permisos `600` y excluidos de Git.
 - OAuth con **PKCE** y parámetro `state` de un solo uso que caduca a los 20 minutos.
-- La página de Netlify es estática: no guarda ni envía nada y solo redirige a `127.0.0.1`.
 
 ---
 
@@ -158,10 +127,10 @@ cortaclips/
   captions.py           subtítulos karaoke, gancho, cabecera, carátula (Pillow)
   framing.py            detección de caras y plan de encuadre
   render.py             composición ffmpeg (caras, difuminado, audiograma)
-  social/               OAuth + publicación: youtube, tiktok, instagram, uploadpost
+  social/               YouTube: OAuth con ID de cliente y secreto, varios canales, subida
 web/index.html          interfaz
 assets/                 tipografías (OFL) y modelo YuNet (MIT)
-site/ + netlify.toml    web pública en Netlify
+site/ + netlify.toml    web pública en Netlify (presentación, privacidad y términos)
 tests/                  pruebas automáticas
 ```
 
@@ -171,6 +140,6 @@ tests/                  pruebas automáticas
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-Las pruebas cubren URLs y errores, transcripción, ajuste de cortes, encuadre, subtítulos, ajustes, el servidor (seguridad y subidas) y los flujos OAuth y de publicación de las tres redes con APIs simuladas.
+Las pruebas cubren URLs y errores, transcripción, ajuste de cortes, encuadre, subtítulos, ajustes, el servidor (seguridad y subidas) el inicio de sesión con Google, varios canales y la subida a YouTube con la API simulada.
 
 Tipografías con licencia SIL Open Font License (ver `assets/fonts/OFL-*.txt`). Detector de caras YuNet con licencia MIT (`assets/models/LICENSE-yunet.txt`).

@@ -193,13 +193,13 @@ class ConfigTests(unittest.TestCase):
             path = Path(temp) / ".env"
             path.write_text("# comentario\nOPENAI_API_KEY=viejo\nOTRA=1\n", encoding="utf-8")
             with patch.dict(os.environ, {}, clear=False):
-                config.save_env({"OPENAI_API_KEY": "nuevo", "TIKTOK_CLIENT_KEY": "abc"}, path)
+                config.save_env({"OPENAI_API_KEY": "nuevo", "YOUTUBE_CLIENT_ID": "abc"}, path)
                 self.assertEqual(os.environ["OPENAI_API_KEY"], "nuevo")
             text = path.read_text(encoding="utf-8")
             self.assertIn("# comentario", text)
             self.assertIn("OPENAI_API_KEY=nuevo", text)
             self.assertIn("OTRA=1", text)
-            self.assertIn("TIKTOK_CLIENT_KEY=abc", text)
+            self.assertIn("YOUTUBE_CLIENT_ID=abc", text)
             if os.name == "posix":
                 self.assertEqual(path.stat().st_mode & 0o777, 0o600)
 

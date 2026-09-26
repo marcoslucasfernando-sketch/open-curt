@@ -136,7 +136,7 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(self.request("GET", f"/api/jobs/{empty['id']}/zip")[0], 400)
 
     def test_oauth_callback_with_unknown_state_is_rejected(self):
-        status, body = self.request("GET", "/oauth/callback?state=8766.tiktok.fake&code=abc")
+        status, body = self.request("GET", "/oauth/callback?state=8766.youtube.fake&code=abc")
         self.assertEqual(status, 400)
         self.assertIn(b"No se pudo conectar", body)
 
